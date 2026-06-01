@@ -1,0 +1,26 @@
+# Lewis — International Economics Analysis Platform
+# Core data/analysis
+pandas
+numpy
+scipy
+statsmodels
+scikit-learn
+networkx
+
+# Data access / APIs
+requests
+aiohttp
+fredapi
+pandasdmx
+istatapi
+
+# I/O
+openpyxl
+xlsxwriter
+
+# Visualization / dashboard
+matplotlib
+seaborn
+plotly
+dash
+dash-bootstrap-components

@@ -1,0 +1,19 @@
+{
+  "api_test": true,
+  "collector_test": true,
+  "datasets_test": {
+    "BIS Current Account Data": {
+      "success": false,
+      "error": "HTTP 404"
+    },
+    "IMF Exchange Rates": {
+      "success": true,
+      "provider_accessible": true,
+      "dataset_count": 4
+    }
+  },
+  "series_test": true,
+  "bop_test": true,
+  "overall_success_rate": 90.0,
+  "ready_for_production": true
+}

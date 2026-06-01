@@ -1,0 +1,4073 @@
+---
+title: "Trade_Visualization_NA"
+author: "NA"
+date: "2024-12-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# DATA_ROOT = where input spreadsheets are read from;
+# OUTPUT_ROOT = where derived CSVs are written. Override via environment.
+DATA_ROOT <- Sys.getenv("DATA_ROOT", "data")
+OUTPUT_ROOT <- Sys.getenv("OUTPUT_ROOT", "outputs")
+if (!dir.exists(OUTPUT_ROOT)) dir.create(OUTPUT_ROOT, recursive = TRUE, showWarnings = FALSE)
+```
+
+# 1.0 Setup
+
+## 1.1 Install Packages
+
+```{r, echo = FALSE, include = FALSE}
+
+install.packages("tidyverse")
+install.packages("here")
+install.packages("readxl")
+
+library(tidyverse)
+library(here)
+library(readxl)
+
+```
+
+# 2.0 Data
+
+## 2.1 Load Data
+
+```{r}
+
+USdata <- read_excel(file.path(DATA_ROOT, "BoP_USRData_NA.xlsx"))
+UKdata <- read_excel(file.path(DATA_ROOT, "BoP_UKRData_NA.xlsx"))
+GERdata <- read_excel(file.path(DATA_ROOT, "BoP_GermanyRData_NA.xlsx"))
+GDPdata <- read_excel(file.path(DATA_ROOT, "BoP_WBankGDP_NA.xlsx"))
+
+names(USdata)
+names(UKdata)
+names(GERdata)
+names(GDPdata)
+
+```
+
+## 2.2 Standardize Date Headers
+
+```{r}
+
+library(readxl)
+library(lubridate)
+library(zoo)
+
+# Standardize USdata (quarterly)
+USdata$Date <- as.yearqtr(USdata$Date, format = "%YQ%q") 
+
+# Standardize GERdata (monthly) - YYYY-MM format
+GERdata$Date <- ym(GERdata$Date)      # Convert to a proper date format first
+GERdata$Year <- year(GERdata$Date) # Extract the year
+GERdata$Month <- month(GERdata$Date) # Extract the month
+
+# Print the first few rows of each data frame to verify
+head(USdata)
+head(UKdata)
+head(GERdata)
+head(GDPdata)
+
+```
+
+## 2.3 Create Annual German Dataset
+
+```{r}
+
+library(dplyr)
+
+names(GERdata)
+
+GERdata_annual <- GERdata %>%
+  group_by(Year) %>%  # Group by the existing 'Year' column
+  summarize(across(c(2:28), sum))  # Sum columns 2 to 28
+
+head(GERdata_annual)
+
+write_csv(GERdata_annual, file.path(OUTPUT_ROOT, "GERdata_annual.csv"))
+
+```
+
+## 2.4 Join German GDP Data to Balance of Payments Data
+
+```{r}
+
+# Rename Date to Year and select relevant columns
+GerGDPdata <- GDPdata %>%
+  rename(Year = Date) %>%
+  select(Year, GerGDP_Wbank)
+
+# Rename GerGDP_Wbank to GDP_Wbank
+GerGDPdata <- GerGDPdata %>%
+  rename(GDP_Wbank = GerGDP_Wbank) 
+
+head(GerGDPdata)
+
+# Convert Year to numeric in GERdata_annual
+GERdata_annual <- GERdata_annual %>%
+  mutate(Year = as.numeric(Year))
+
+# Convert Year to numeric in GDPdata (if it's not already)
+GerGDPdata <- GerGDPdata %>%
+  mutate(Year = as.numeric(Year))
+
+# Now perform the join
+GERdata_annual <- left_join(GERdata_annual, GerGDPdata, by = "Year")
+
+# Continue with the rest of your code 
+GERdata_annual_pct <- GERdata_annual %>%
+  mutate(across(2:28, ~ . / GDP_Wbank)) 
+
+head(GERdata_annual_pct)
+
+names(GERdata_annual_pct)
+
+GERdata_annual_pct <- GERdata_annual_pct %>%
+  rename_with(~ paste0(., "_pct"), .cols = 2:28)
+
+head(GERdata_annual_pct)
+
+write_csv(GERdata_annual_pct, file.path(OUTPUT_ROOT, "GERdata_annual_pct.csv"))
+
+
+```
+
+## 2.5 Multiply German percentages by a million to match GDP format
+
+```{r}
+GERdata_annual_pct <- GERdata_annual_pct %>%
+  mutate(across(2:28, ~ . * 1e6)) 
+
+head(GERdata_annual_pct)
+```
+
+## 2.6 Now Create Annual US Dataset
+
+```{r}
+
+# Assuming your data frame is named USdata
+
+# Extract the year from the Date column
+USdata$Year <- as.numeric(substr(USdata$Date, 1, 4))
+
+# Aggregate the data by year, summing all relevant columns
+USdata_annual <- aggregate(. ~ Year, USdata[, -1], sum)
+
+head(USdata_annual)
+
+###################
+
+USdata <- read_excel(file.path(DATA_ROOT, "BoP_USRData_NA.xlsx"))
+
+# Standardize USdata (quarterly)
+USdata$Date <- as.yearqtr(USdata$Date, format = "%YQ%q") 
+
+# Extract the year
+USdata$Year <- year(USdata$Date)
+
+# Reorder columns with Year at the beginning
+USdata <- USdata[, c("Year", setdiff(names(USdata), "Year"))]
+
+# Aggregate by year
+USdata_annual <- USdata %>% 
+  group_by(Year) %>% 
+  summarize(across(where(is.numeric), sum, na.rm = TRUE), .groups = 'drop')
+
+# Display the annual data frame
+print(USdata_annual)
+
+```
+
+## 2.7 Join US GDP Data to Balance of Payments Data and create Pct of GDP calculations
+
+```{r}
+# Assuming your data frame is named 'USdata' and has a column named 'USGDP_Wbank'
+GDPdata <- read_excel(file.path(DATA_ROOT, "BoP_WBankGDP_NA.xlsx"))
+
+# Rename Date to Year and select relevant columns
+USGDPdata <- GDPdata %>%
+  rename(Year = Date) %>%
+  select(Year, USAGDP_Wbank)
+
+# Rename USGDP_Wbank to GDP_Wbank
+USGDPdata <- USGDPdata %>%
+  rename(GDP_Wbank = USAGDP_Wbank)
+
+# Convert Year to numeric in USdata_annual (assuming you have this dataframe)
+USdata_annual <- USdata_annual %>%
+  mutate(Year = as.numeric(Year))
+
+# Convert Year to numeric in USGDPdata (if it's not already)
+USGDPdata <- USGDPdata %>%
+  mutate(Year = as.numeric(Year))
+
+# Now perform the join
+USdata_annual <- left_join(USdata_annual, USGDPdata, by = "Year")
+```
+
+## 2.8 Create percentages for US data
+
+```{r}
+# Continue with the rest of your code 
+USdata_annual_pct <- USdata_annual %>%
+  mutate(across(3:ncol(USdata_annual) - 1, ~ . / GDP_Wbank * 1000000)) # Start from the 3rd column
+
+# Rename columns (adjust the range 3:ncol(...) if necessary)
+USdata_annual_pct <- USdata_annual_pct %>%
+  rename_with(~ paste0(., "_pct"), .cols = 2:(ncol(USdata_annual) - 1)) # Start from the 3rd column
+
+# Write to CSV
+write_csv(USdata_annual_pct, file.path(OUTPUT_ROOT, "USdata_annual_pct.csv"))
+
+```
+
+## 2.9 Join UK GDP Data to Balance of Payments Data 
+
+```{r}
+
+library(readxl)
+library(dplyr)
+
+GDPdata <- read_excel(file.path(DATA_ROOT, "BoP_WBankGDP_NA.xlsx"))
+
+# Assuming your Excel file has a column named 'UKGDP_Wbank' for UK GDP data
+UKGDPdata <- GDPdata %>%
+  rename(Year = Date) %>%
+  select(Year, UKGDP_ONS_WBank)
+
+# Rename UKGDP_Wbank to GDP_Wbank for consistency
+UKGDPdata <- UKGDPdata %>%
+  rename(GDP_Wbank = UKGDP_ONS_WBank)
+
+# Convert Year to numeric in UKGDPdata (if it's not already)
+UKGDPdata <- UKGDPdata %>%
+  mutate(Year = as.numeric(Year))
+
+# Assuming you have a dataframe named 'UKdata_annual' for UK-specific data
+# Convert Year to numeric in UKdata_annual 
+UKdata_annual <- UKdata %>%
+  mutate(Year = as.numeric(Year))
+
+# Now perform the join with the UK data
+UKdata_annual <- left_join(UKdata_annual, UKGDPdata, by = "Year")
+
+```
+
+## 2.10 Create percentages for UK data
+
+```{r}
+
+# Assuming you have the UKdata_annual dataframe from the previous step
+
+# Calculate percentages relative to GDP_Wbank
+UKdata_annual_pct <- UKdata_annual %>%
+  mutate(across(3:ncol(UKdata_annual) - 1, ~ . / GDP_Wbank * 1000000)) # Start from the 3rd column
+
+# Rename columns (adjust the range 3:ncol(...) if necessary)
+UKdata_annual_pct <- UKdata_annual_pct %>%
+  rename_with(~ paste0(., "_pct"), .cols = 2:(ncol(UKdata_annual) - 1)) # Start from the 3rd column
+
+# Write to CSV
+write_csv(UKdata_annual_pct, file.path(OUTPUT_ROOT, "UKdata_annual_pct.csv"))
+
+```
+
+## 2.11 Merge Three Datasets
+
+```{r}
+
+# Assuming your data frames are named USdata_annual_pct, UKdata_annual_pct, and GERdata_annual_pct
+
+# names(USdata_annual_pct)
+# names(UKdata_annual_pct)
+# names(GERdata_annual_pct)
+
+# 1. Add a Country column to each data frame
+USdata_annual_pct$Country <- "US"
+UKdata_annual_pct$Country <- "UK"
+GERdata_annual_pct$Country <- "GER"
+
+
+# Rename columns in USdata_annual_pct
+USdata_annual_pct <- USdata_annual_pct %>%
+  rename(
+    "Trade Balance_pct" = "Goods and Services Balance_pct",
+    "Income Balance_pct" = "Total Income Balance_pct",
+    "Statistical Discrepancy_pct" = "Statistical discrepancy 3_pct",
+    "Financial Derivatives_pct" = "Financial derivatives other than reserves, net transactions 2_pct",
+    "Net Errors and Omissions_pct" = "Asset/Liability Balance_pct"  # Assuming this is the closest equivalent
+  ) %>%
+  select(
+    Country, 
+    Year, 
+    "Merchandise Exports_pct", 
+    "Merchandise Imports_pct", 
+    "Merchandise Trade Balance_pct",
+    "Service Exports_pct", 
+    "Service Imports_pct", 
+    "Service Trade Balance_pct", 
+    "Trade Balance_pct", 
+    "Primary Income Receipts_pct",
+    "Primary Income Payments_pct", 
+    "Primary Income Balance_pct", 
+    "Secondary Income Receipts_pct",
+    "Secondary Income Payments_pct", 
+    "Secondary Income Balance_pct", 
+    "Income Balance_pct",
+    "Current Account Balance_pct", 
+    "Capital transfer receipts and other credits_pct",
+    "Capital transfer payments and other debits_pct", 
+    "Capital Account Balance_pct",
+    "Direct investment assets_pct", 
+    "Portfolio Investment Assets_pct", 
+    "Other investment assets_pct",
+    "Reserve Assets_pct", 
+    "Net U.S. acquisition of financial assets excluding financial derivatives (net increase in assets / financial outflow (+))_pct",
+    "Direct investment liabilities_pct", 
+    "Portfolio investment liabilities_pct", 
+    "Other investment liabilities_pct",
+    "Net U.S. incurrence of liabilities excluding financial derivatives (net increase in liabilities / financial inflow (+))_pct",
+    "Financial Derivatives_pct", 
+    "Financial Account Balance_pct", 
+    "Statistical Discrepancy_pct",
+    "Net Errors and Omissions_pct", 
+    GDP_Wbank
+  )
+
+
+# Rename columns in UKdata_annual_pct
+UKdata_annual_pct <- UKdata_annual_pct %>%
+  rename(
+    "Trade Balance_pct" = "Goods and Services Balance_pct",
+    "Income Balance_pct" = "Total Income Balance_pct",
+    "Statistical Discrepancy_pct" = "Net errors and omissions_pct" 
+  ) %>%
+  select(
+    Country, 
+    Year, 
+    "Merchandise Trade Balance_pct", 
+    "Service Trade Balance_pct", 
+    "Trade Balance_pct",
+    "Compensation of Employees_pct",  
+    "Investment Income_pct",         
+    "Other primary income_pct", 
+    "Primary Income Balance_pct",    
+    "Secondary Income Balance_pct", 
+    "Income Balance_pct",      
+    "Current Account Balance_pct",    
+    "Capital Account Balance_pct",   
+    "Financial Account Balance_pct", 
+    "Statistical Discrepancy_pct",  
+    GDP_Wbank
+  )
+
+# Rename columns in GERdata_annual_pct
+GERdata_annual_pct <- GERdata_annual_pct %>%
+  rename(
+    "Trade Balance_pct" = "Total Trade Balance_pct",
+    "Income Balance_pct" = "Total Income Balance_pct",
+    "Statistical Discrepancy_pct" = "Net Errors and Omissions_pct",
+    "Financial Derivatives_pct" = "Net Financial Derivatives and employee stock options_pct"
+  ) %>%
+  select(
+    Country, 
+    Year, 
+    "Merchandise Exports_pct", 
+    "Merchandise Imports_pct", 
+    "Merchandise Trade Balance_pct",
+    "Service Exports_pct", 
+    "Service Imports_pct", 
+    "Service Trade Balance_pct",
+    "Trade Balance_pct", 
+    "Primary Income Receipts_pct",
+    "Primary Income Payments_pct", 
+    "Primary Income Balance_pct", 
+    "Secondary Income Receipts_pct",
+    "Secondary Income Payments_pct", 
+    "Secondary Income Balance_pct", 
+    "Income Balance_pct",
+    "Current Account Balance_pct", 
+    "Capital Account Balance_pct",                                                      
+    "Net Domestic Investment / Enterprises and households_pct",                          
+    "Net Domestic Investment / Monetary financial institutions (excl. central bank)_pct",
+    "Net Domestic Investment / General government_pct",                                  
+    "Net Domestic Investment / Central bank_pct",                                        
+    "Net Other investment_pct",                                                          
+    "Net Domestic Investment Abroad_pct",                                                
+    "Net Direct Investment_pct",                                                         
+    "Net Portfolio Investment_pct",                                                      
+    "Financial Derivatives_pct",
+    "Financial Account Balance_pct",                                                     
+    "Statistical Discrepancy_pct",                                                                                                             
+    GDP_Wbank
+  )
+
+
+# 1. Add a Country column to each data frame (already done)
+
+# 2. Combine the data frames vertically
+data_annual_pct <- bind_rows(USdata_annual_pct, UKdata_annual_pct, GERdata_annual_pct)
+
+# 3. Optionally, reorder columns to have Country and Year first (already done)
+
+# Display the combined data frame
+head(data_annual_pct)
+
+
+# 2. Combine the data frames vertically
+data_annual_pct <- bind_rows(USdata_annual_pct, UKdata_annual_pct, GERdata_annual_pct)
+
+# 3. Optionally, reorder columns to have Country and Year first
+data_annual_pct <- data_annual_pct %>%
+  select(Country, Year, everything())
+
+# Display the combined data frame
+head(data_annual_pct)
+
+
+
+```
+
+
+
+
+### Explaining Capital Account vs Financial Account
+
+The capital account and financial account are both components of a country's balance of payments (BOP), but they track different types of cross-border transactions. Here's a breakdown of their differences: 
+
+Capital Account
+
+Focus: Tracks relatively small capital transfers.
+Examples:
+Debt forgiveness 
+Transfer of assets by migrants 
+Monetary gifts and grants 
+Inheritance taxes
+Death duties
+Unilateral transfers of goods and financial assets by governments 
+Financial Account
+
+Focus: Tracks larger investments and financial flows.
+Components:
+Direct investment: Investing in a company or establishing a business in a foreign country to gain control or influence. (e.g., building a factory overseas) 
+Portfolio investment: Buying stocks, bonds, or other financial assets in foreign companies. (e.g., purchasing shares of a foreign company) 
+Other investment: Transactions involving loans, currency deposits, and trade credits. (e.g., a bank lending money to a foreign business)
+Reserve assets: Foreign currency reserves and gold held by central banks. 
+Key Differences in the Balance of Payments
+
+The capital account and financial account both reflect changes in a country's assets and liabilities, but they differ in the types of assets and liabilities they record: 
+
+Capital account: Deals with transfers of ownership of non-financial assets and non-produced assets (like natural resources). 
+Financial account: Deals with changes in ownership of financial assets (like stocks, bonds, and bank deposits).
+
+In Summary
+Think of the capital account as dealing with smaller, one-time transfers of capital, while the financial account tracks larger, more significant investments and financial transactions between countries. 
+
+### Explaining Current Account Incomes vs Cap & Fin Accounts
+
+Current Account: Primary and Secondary Income
+
+The current account focuses on the flow of goods, services, and income earned from those activities. Here's how primary and secondary income fit in:
+
+Primary Income: Reflects income earned from productive activities and investments.
+
+Examples:
+Compensation of employees: Wages and salaries earned by residents working in other countries.
+Investment income: Earnings from investments in other countries (dividends from stocks, interest from bonds).
+
+Secondary Income: Involves transfers where there's no direct exchange of goods or services.
+
+Examples:
+Foreign aid: Grants and assistance given to other countries.
+Remittances: Money sent by individuals working abroad back to their home country.
+
+Key Differences
+Nature of Transactions:
+
+Current account (primary and secondary income): Focuses on income generated from economic activity or transferred without an economic counterpart.
+
+Capital and financial accounts: Focus on the acquisition and disposal of assets (both financial and non-financial).
+
+Timing:
+Current account: Records transactions when the income is earned or the transfer occurs.
+Capital and financial accounts: Records transactions when the ownership of the asset changes.
+Impact on Income:
+
+Current account: Directly affects a country's national income.
+Capital and financial accounts: Primarily affect the country's international investment position.
+
+Think of it this way:
+The current account is like your paycheck - it reflects your earnings from work (primary income) and any gifts you receive (secondary income).
+The capital and financial accounts are like your investments - they reflect changes in your assets and liabilities, such as buying a house or investing in the stock market.
+By understanding these distinctions, you can gain a clearer picture of a country's economic interactions with the rest of the world.
+
+### Where are the profits?
+
+1. Investment Type Matters
+The location of investment profits depends on the type of investment:
+
+--Direct Investment: Profits from direct investments (like owning a factory abroad) are typically recorded in the current account as primary income. These profits can be:
+Repatriated: Sent back to the investor's home country.
+Reinvested: Kept in the foreign country to fund further operations or expansion.
+
+--Portfolio Investment: Profits from portfolio investments (like owning stocks or bonds) are also recorded in the current account as primary income. These profits usually take the form of:
+Dividends: A share of the company's profits distributed to shareholders.
+Interest: Payments made on bonds or other debt securities.
+
+2. The Role of the Financial Account
+While the income from investments is recorded in the current account, the initial investment itself and any subsequent changes in ownership are recorded in the financial account.
+
+Example: If a U.S. company buys stock in a foreign company, the initial purchase is recorded as an outflow in the U.S. financial account. If they later sell that stock at a profit, the profit is recorded as inflow in the U.S. current account, and the sale of the stock is recorded as an inflow in the U.S. financial account.
+
+The Bigger Picture
+Investment profits play a crucial role in the balance of payments:
+Current Account Impact: They contribute to a country's current account surplus (if income exceeds outflows) or deficit (if outflows exceed income).
+Financial Account Link: They are linked to the financial account, as investment flows ultimately drive investment income.
+In Summary
+
+Investment profits primarily flow into the current account as primary income, either being repatriated to the investor's home country or reinvested abroad. The financial account captures the movement of the underlying investments themselves.
+
+# 3.0 Visualization
+
+## 3.1 Visualize German Percentages, Initial run
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`, 
+         `Income Balance_pct`, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage")
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage, color = Balance)) +
+  geom_line() +
+  labs(title = "German Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance") +
+  theme_minimal()
+
+```
+
+## 3.1a German percentages take two
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`, 
+         `Income Balance_pct`, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage")
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +  # Increase line thickness
+  labs(title = "German Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +  # Format y-axis as percentages
+  theme_minimal() +  # Clean theme
+  theme(legend.position = "bottom") +  # Move legend to the bottom
+  guides(color = guide_legend(nrow = 2))  # Arrange legend items in two rows
+
+```
+
+## 3.1b German percentages take 3
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`, 
+         `Income Balance_pct`, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))  # Remove "_pct" from Balance
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +  # Increase line thickness
+  labs(title = "German Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +  # Rename legend title
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +  # Format y-axis as percentages
+  theme_minimal() +  # Clean theme
+  theme(legend.position = "bottom") +  # Move legend to the bottom
+  guides(color = guide_legend(nrow = 2))  # Arrange legend items in two rows
+
+```
+
+## 3.1c German percentages take 4
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`, 
+         `Income Balance_pct`, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))  # Remove "_pct" from Balance
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +  # Increase line thickness
+  labs(title = "German Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +  # Rename legend title
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +  # Format y-axis as percentages
+  theme_minimal() +  # Clean theme
+  theme(legend.position = "right",  # Move legend to the right
+        axis.line = element_line(color = "black"),  # Make axis lines black
+        panel.grid.minor = element_blank()) +  # Remove minor gridlines
+  guides(color = guide_legend(nrow = 5))  # Arrange legend items in 5 rows
+
+```
+
+## 3.1d German percentages take 5
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`, 
+         `Income Balance_pct`, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) 
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "German Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank()) + 
+  guides(color = guide_legend(nrow = 2))  # Arrange legend items in 2 rows
+```
+
+
+
+### Some explanations
+
+This graph displays key components of Germany's balance of payments as a percentage of GDP from 1970 to 2023. Here's a breakdown of the trends and potential interpretations:
+
+1. Current Account Balance:
+
+Generally positive: Germany has mostly run a current account surplus (more exports than imports of goods, services, and income) throughout this period, indicating a competitive economy.
+Increasing trend: The surplus grew significantly from the late 1990s to around 2007, peaking at nearly 9% of GDP. This likely reflects increased export competitiveness, particularly in manufacturing.
+Recent decline: Since the late 2000s, the surplus has decreased, although it remains positive. This could be due to factors like rising domestic consumption, increased imports, or slower export growth.
+
+2. Trade Balance:
+
+Significant contributor: The trade balance (goods and services) is a major component of the current account, generally mirroring its trend.
+Export strength: Germany's consistent trade surplus highlights its strength in exporting high-value goods like automobiles and machinery.
+
+3. Income Balance:
+
+Fluctuating but mostly positive: This reflects net income flows from investments and other sources. The volatility could be due to changes in global investment returns or shifts in international investment positions.
+
+4. Financial Account Balance:
+
+Generally negative: This indicates more capital outflows than inflows, which is typical for a country with a current account surplus. Germany invests heavily abroad, and these investments are reflected as outflows in the financial account.
+
+5. Capital Account Balance:
+
+Relatively small: This component, which includes capital transfers and non-produced, non-financial assets, has remained relatively small and stable.
+Possible Explanations for Developments:
+
+Economic reforms: Reforms in the 1990s and early 2000s, such as labor market flexibilization, might have boosted Germany's competitiveness and contributed to the growing current account surplus.
+Eurozone membership: The introduction of the euro likely facilitated trade and investment within the Eurozone, further supporting Germany's export-oriented economy.
+Global economic conditions: The global financial crisis and subsequent Eurozone debt crisis likely impacted Germany's balance of payments, contributing to the decline in the current account surplus.
+Shifting global value chains: Changes in global production and trade patterns could also play a role in the more recent trends.
+
+Important Considerations:
+
+Data limitations: This graph provides a simplified view. A deeper analysis would require examining the detailed components of each balance.
+
+Interconnectedness: Balance of payments components are interconnected. For example, a current account surplus is often mirrored by a financial account deficit.
+
+Policy implications: Large and persistent imbalances can have implications for exchange rates, domestic demand, and international economic relations.
+
+This interpretation provides a general overview. Further research and analysis are needed to fully understand the complexities of Germany's balance of payments dynamics.
+
+### Specific to East Ger and EU Explanations
+
+The integration of East Germany and the creation of the European Union (EU) likely had significant, albeit complex and intertwined, effects on Germany's balance of payments. Here's how these events might have influenced the trends we see in the graph:
+
+Integration of East Germany (1990):
+
+Initial impact:
+
+Increased domestic demand: Reunification led to increased demand for consumer goods and investment in East Germany, likely boosting imports and potentially reducing the trade surplus in the early 1990s.
+
+Capital flows to the East: Massive capital flows from West to East Germany for reconstruction and investment would have shown up as outflows in the financial account.
+
+Fiscal burden: The costs of integrating East Germany likely strained public finances, potentially affecting the income balance through government borrowing and interest payments.
+
+Longer-term effects:
+
+Improved competitiveness: Over time, the modernization and integration of East German industries could have enhanced Germany's overall export competitiveness, contributing to the rising trade and current account surpluses in the late 1990s and 2000s.
+
+Expanded market: The addition of East Germany expanded the domestic market, potentially attracting foreign investment and influencing the financial account.
+
+Creation of the European Union (Maastricht Treaty 1992, Euro introduction 1999):
+
+Increased trade: The single market and the euro likely reduced trade barriers and transaction costs, boosting trade within the EU and potentially contributing to Germany's export success. This would be reflected in the trade and current account balances. 
+
+Investment flows: The EU facilitated cross-border investment, potentially influencing both inward and outward investment flows in Germany's financial account.
+
+Economic stability: The euro and the EU's economic governance framework might have fostered stability and confidence, further supporting trade and investment.
+Interconnected effects:
+
+It's important to note that the effects of these two events are intertwined. For example, the EU's single market likely facilitated the integration of East Germany into the broader European economy. Additionally, both events contributed to Germany's economic strength and export orientation, which are reflected in the balance of payments trends.
+
+Challenges and complexities:
+
+Data limitations: Isolating the specific impact of each event is challenging due to the many other factors affecting the balance of payments.
+
+Uneven development: The integration of East Germany was a long process with ongoing economic disparities. This might have influenced the balance of payments through regional variations in trade and investment.
+
+Eurozone dynamics: Germany's large current account surpluses within the Eurozone have been a source of debate and policy challenges, highlighting the complex economic relationships within the monetary union.
+
+Overall, the integration of East Germany and the creation of the EU likely played a significant role in shaping Germany's balance of payments dynamics. While the initial impact of reunification might have been mixed, both events likely contributed to Germany's long-term economic strength and export orientation, as reflected in the sustained current account surpluses observed in the graph.
+
+## 3.2 Visualize USA Percentages, initial run
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,
+         `Merchandise Trade Balance_pct`,
+         `Service Trade Balance_pct`,             
+         `Trade Balance_pct`,
+         `Primary Income Balance_pct`,
+         `Secondary Income Balance_pct`,
+         `Income Balance_pct`,
+         `Current Account Balance_pct`,
+         `Capital Account Balance_pct`,
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "US Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank()) +
+  guides(color = guide_legend(nrow = 3)) # Arrange legend items in 3 rows
+
+```
+
+## 3.2a Visualize USA Percentages take 2
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,                                                                                                                          
+         `Merchandise Trade Balance_pct`,                                                                                                
+         `Service Trade Balance_pct`,                                                                                                    
+         `Trade Balance_pct`,                                                                                               
+         `Primary Income Balance_pct`,                                                                                                   
+         `Secondary Income Balance_pct`,                                                                                                 
+         `Income Balance_pct`,                                                                                                     
+         `Current Account Balance_pct`,                                                                                                  
+         `Capital Account Balance_pct`,                                                                                                 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "US Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(legend.position = "right", # Changed legend position to "right"
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank())
+
+```
+
+## 3.2b Visualize USA Percentages take 3
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,                                                                                                                          
+         `Trade Balance_pct`,                                                                                                
+         `Income Balance_pct`,                                                                                                     
+         `Current Account Balance_pct`,                                                                                                  
+         `Capital Account Balance_pct`,                                                                                                 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "US Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(legend.position = "right", # Legend position on the right
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank())
+
+```
+
+## 3.2c USA Percentages take 4
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,                                                                                                                          
+         `Trade Balance_pct`,                                                                                                
+         `Income Balance_pct`,                                                                                                     
+         `Current Account Balance_pct`,                                                                                                  
+         `Capital Account Balance_pct`,                                                                                                 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "US Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1960, 2020, by = 10)) + # Set x-axis breaks every 10 years
+  theme_minimal() +
+  theme(legend.position = "right", # Legend position on the right
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank())
+
+```
+
+## 3.2d USA Percentages OLD CAP ACCT
+
+```{r}
+
+# Select the relevant columns, calculate "Old Capital Account Balance", and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,                                     
+         `Current Account Balance_pct`,         
+         `Capital Account Balance_pct`,          
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account Balance_pct` = `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>% 
+  select(-`Capital Account Balance_pct`, -`Financial Account Balance_pct`) %>% 
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "US Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1960, 2020, by = 10)) + 
+  theme_minimal() +
+  theme(legend.position = "right", 
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank())
+
+```
+
+```{r}
+
+# Select the relevant columns, calculate "Old Capital Account Balance", and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,                                     
+         `Current Account Balance_pct`,         
+         `Capital Account Balance_pct`,          
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account Balance_pct` = `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>% 
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") + # Add the dotted line at 0%
+  labs(title = "US Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1960, 2020, by = 10)) + 
+  theme_minimal() +
+  theme(legend.position = "right", 
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank())
+
+```
+
+## 3.2e USA Percenages old cap acct take 2
+
+```{r}
+# Select the relevant columns, calculate "Old Capital Account Balance", and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,                                     
+         `Current Account Balance_pct`,         
+         `Capital Account Balance_pct`,          
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account Balance_pct` = `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>% 
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") + 
+  labs(title = "US Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1960, 2020, by = 10)) + 
+  scale_color_manual(values = c("Capital Account" = "red", 
+                                "Current Account" = "darkgreen", 
+                                "Financial Account" = "cyan",  # Changed to cyan
+                                "Old Capital Account" = "purple"),   # Changed to purple
+                     labels = c("Capital Account", "Current Account", "Financial Account", "Old Capital Account")) + # Remove "Balance" from legend labels
+  theme_minimal() +
+  theme(legend.position = "bottom",  # Move the legend to the bottom
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank())
+```
+
+## 3.2f USA Percentages old cap acct take 3
+
+```{r}
+
+# Select the relevant columns, calculate "Old Capital Account Balance", and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,                                     
+         `Current Account Balance_pct`,         
+         `Capital Account Balance_pct`,          
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account Balance_pct` = `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>% 
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))  # Make sure this correctly removes "_pct"
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") + 
+  labs(title = "US Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1960, 2020, by = 10)) + 
+  scale_color_manual(values = c("Current Account Balance" = "darkgreen",   # Match the exact names!
+                                "Capital Account Balance" = "red", 
+                                "Financial Account Balance" = "cyan",  
+                                "Old Capital Account Balance" = "purple"),
+                     labels = c("Current Account", "Capital Account", "Financial Account", "Old Capital Account")) + 
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank())
+
+```
+
+## 3.2g USA Percentages old cap acct take 4
+
+```{r}
+
+# Select the relevant columns, calculate "Old Capital Account Balance", and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,                                     
+         `Current Account Balance_pct`,         
+         `Capital Account Balance_pct`,          
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account Balance_pct` = `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>% 
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))  
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") + 
+  labs(title = "US Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1960, 2020, by = 10)) + 
+  scale_color_manual(values = c("Current Account Balance" = "darkgreen",  
+                                "Capital Account Balance" = "red", 
+                                "Financial Account Balance" = "cyan",  
+                                "Old Capital Account Balance" = "purple"),
+                     labels = c("Current Account", "Capital Account", "Financial Account", "Old Capital Account")) + 
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        legend.box = "vertical") +  # Arrange legend items vertically
+  guides(color = guide_legend(ncol = 2))  # Split the legend into 2 columns
+
+
+# Export the plot to a PNG file
+ggsave("us_balance_of_payments.png", plot, width = 8, height = 6, dpi = 300)
+
+```
+
+## 3.2h USA Percentages old cap acct take 5
+
+```{r}
+
+# Select the relevant columns, calculate "Old Capital Account Balance", and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,                                     
+         `Current Account Balance_pct`,         
+         `Capital Account Balance_pct`,          
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account Balance_pct` = `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>% 
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))  
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") + 
+  labs(x = "Year", 
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1960, 2020, by = 10)) + 
+  scale_color_manual(values = c("Current Account Balance" = "darkgreen",  
+                                "Capital Account Balance" = "red", 
+                                "Financial Account Balance" = "cyan",  
+                                "Old Capital Account Balance" = "purple"),
+                     labels = c("Current Account", "Capital Account", "Financial Account", "Old Capital Account")) + 
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        legend.box = "vertical",
+        text = element_text(size = 14), 
+        axis.title = element_text(size = 16),
+        legend.text = element_text(size = 12), 
+        legend.title = element_text(size = 14)) + 
+  guides(color = guide_legend(ncol = 2)) 
+
+
+# Export the plot to a PNG file
+# Export the plot to a PNG file with adjusted height
+ggsave("us_balance_of_payments.png", plot, width = 8, height = 4, dpi = 300)  # Changed height to 4
+
+```
+
+## 3.2i USA pct old cap
+
+
+```{r}
+
+# Select the relevant columns, calculate "Old Capital Account Balance", and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,                                     
+         `Current Account Balance_pct`,         
+         `Capital Account Balance_pct`,          
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account Balance_pct` = `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>% 
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))  
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") + 
+  labs(x = "Year", 
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1960, 2020, by = 10)) + 
+  scale_color_manual(values = c("Current Account Balance" = "red",  # Changed "Current Account Balance" to red
+                                "Capital Account Balance" = "darkgreen",  # Changed "Capital Account Balance" to darkgreen 
+                                "Financial Account Balance" = "cyan",  
+                                "Old Capital Account Balance" = "purple"),
+                     labels = c("Current Account", "Capital Account", "Financial Account", "Old Capital Account")) + 
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        legend.box = "vertical",
+        text = element_text(size = 14), 
+        axis.title = element_text(size = 16),
+        legend.text = element_text(size = 12), 
+        legend.title = element_text(size = 14)) + 
+  guides(color = guide_legend(ncol = 2)) 
+
+
+# Export the plot to a PNG file with adjusted height
+ggsave("us_balance_of_payments.png", plot, width = 8, height = 4, dpi = 300)
+
+```
+
+## 3.2j USA pct old cap
+
+```{r}
+
+# Select the relevant columns, calculate "Old Capital Account Balance", and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,                                     
+         `Current Account Balance_pct`,         
+         `Capital Account Balance_pct`,          
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account Balance_pct` = `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>% 
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))  
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") + 
+  labs(x = "Year", 
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1960, 2020, by = 10)) + 
+  scale_color_manual(values = c("Current Account Balance" = "darkgreen",  # "Current Account Balance" is now darkgreen
+                                "Capital Account Balance" = "red",         # "Capital Account Balance" is now red
+                                "Financial Account Balance" = "cyan",  
+                                "Old Capital Account Balance" = "purple"),
+                     labels = c("Current Account", "Capital Account", "Financial Account", "Old Capital Account"),
+                     breaks = c("Current Account Balance", "Capital Account Balance", "Financial Account Balance", "Old Capital Account Balance")) +  # Explicitly set the breaks
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        legend.box = "vertical",
+        text = element_text(size = 14), 
+        axis.title = element_text(size = 16),
+        legend.text = element_text(size = 12), 
+        legend.title = element_text(size = 14)) + 
+  guides(color = guide_legend(ncol = 2)) 
+
+
+# Export the plot to a PNG file with adjusted height
+ggsave("us_balance_of_payments.png", plot, width = 8, height = 4, dpi = 300)
+
+```
+
+
+### Some Explanations
+This graph shows the US Balance of Payments as a percentage of GDP from 1960 to 2023. Here's a breakdown of the key takeaways:
+
+Overall Trends:
+
+Current Account Deficit: The most prominent feature is the persistent current account deficit (the green line). This means the US consistently spends more on foreign goods, services, and investments than it receives from abroad. This deficit has generally widened over time, with some fluctuations.
+
+Capital Account Surplus: The capital account (red line) generally shows a surplus, which means the US attracts more foreign investment than it invests abroad. This inflow of capital helps finance the current account deficit.
+
+Financial Account Volatility: The financial account (light blue line) is more volatile, reflecting changes in international investment flows and financial transactions.
+Specific Observations:
+
+1980s and Early 2000s: The current account deficit significantly widened during these periods, likely due to factors like increased consumer spending and strong economic growth.
+
+Late 1990s and Mid-2000s: The current account deficit improved somewhat during these periods, possibly due to a weaker dollar and increased exports.
+
+Global Financial Crisis (2008): The crisis led to a sharp decline in the current account deficit as global trade and investment flows contracted.
+
+Recent Years: The current account deficit has been widening again in recent years.
+
+Relationships between Balances:
+
+Current and Financial Accounts: The current and financial accounts tend to move in opposite directions. This reflects the basic accounting identity that the current account balance must be offset by the capital and financial account balances.
+
+Trade and Income: The goods and services balance (purple line) and the total income balance (yellow line) contribute to the overall current account balance. Changes in these balances can influence the overall deficit.
+
+Important Considerations:
+
+Causes of Deficits: The persistent US current account deficit is a complex issue with multiple contributing factors, including trade policies, savings rates, economic growth, and the role of the US dollar as a global reserve currency.
+
+Sustainability: While the US has been able to finance its current account deficit for many years, there is ongoing debate about the long-term sustainability of this situation.
+
+Economic Implications: The balance of payments has important implications for exchange rates, interest rates, and overall economic performance.
+
+This graph provides a valuable overview of the US balance of payments over time. Understanding these trends is crucial for analyzing the US economy and its interactions with the rest of the world.
+
+### Event Explanations
+You're right to bring up those historical landmarks! They provide crucial context for understanding the trends in the US balance of payments. Here's how we can interpret the data in light of those events:
+
+Nixon Shock (1971):
+
+Ending the Gold Standard: Nixon's decision to end the dollar's convertibility to gold marked a major shift in the international monetary system. It led to a more flexible exchange rate regime, where the dollar's value was determined by market forces.
+
+Impact on the Graph: While the graph starts in 1960, we can see some volatility in the early 1970s following the Nixon Shock. This likely reflects the initial adjustments to the new floating exchange rate system. The shock also contributed to increased global capital mobility, which is reflected in the growing importance of the financial account in subsequent decades.
+
+Trade Agreements (1990s and early 2000s):
+
+NAFTA and WTO: The North American Free Trade Agreement (NAFTA) in 1994 and China's entry into the World Trade Organization (WTO) in 2001 significantly impacted US trade patterns.
+
+Impact on the Graph: These agreements likely contributed to the widening of the current account deficit in the late 1990s and early 2000s. Increased trade with lower-cost countries led to a surge in imports, which may have outpaced export growth.
+
+Other Landmarks:
+
+Plaza Accord (1985): This agreement between major economies aimed to depreciate the US dollar. You might observe a slight improvement in the current account balance in the late 1980s, potentially related to this accord.
+
+Dot-com Bubble (late 1990s): The rapid growth of the internet and technology sector led to increased investment and economic growth in the US. This might have contributed to the widening current account deficit during that period.
+
+US Financial Crisis (2008):
+
+Sharp Decline in Deficit: As you noted, the financial crisis had a noticeable impact. The graph shows a sharp decline in the current account deficit around 2008-2009. This was due to a contraction in global trade and investment flows, as well as a decrease in US consumer spending.
+
+Longer-Term Effects: While the deficit recovered somewhat after the crisis, it has remained elevated. The crisis also highlighted the interconnectedness of global financial markets and the potential risks associated with large current account imbalances.
+
+Key Takeaways:
+
+The US balance of payments has been shaped by major economic and political events.
+Trade agreements, exchange rate policies, and financial crises have all played a role in the trends observed in the graph.
+
+Understanding these historical influences is crucial for interpreting the data and making informed predictions about future trends.
+
+### Twin Deficits Potential
+
+You're absolutely right to consider the connection between the US current account deficit and the US federal budget deficit! They are indeed related, though the relationship can be complex and isn't always straightforward. Here's how they connect:
+
+The "Twin Deficits" Hypothesis:
+
+Basic Idea: This hypothesis suggests that there's a strong link between the two deficits. When the government runs a budget deficit (spending more than it takes in through taxes), it needs to borrow money. This increased borrowing can push up interest rates, which in turn attracts foreign capital.
+
+Impact on Current Account: The inflow of foreign capital to finance the budget deficit can lead to a stronger dollar. A stronger dollar makes US exports more expensive and imports cheaper, potentially widening the current account deficit.
+
+Evidence from the Graph:
+
+1980s: The US experienced large budget deficits under President Reagan. This period also saw a significant widening of the current account deficit, which aligns with the twin deficits hypothesis. 
+Early 2000s: The US again ran large budget deficits under President Bush, coinciding with another period of current account deficit widening.
+
+Nuances and Other Factors:
+
+Not Always a Direct Link: While there's a correlation, the relationship isn't always perfect. Other factors, such as private savings rates, investment levels, and global economic conditions, also influence the current account balance.
+Late 1990s: The late 1990s saw a budget surplus, yet the current account deficit continued to widen. This suggests that factors beyond the budget deficit were at play, such as the strong economic growth and the dot-com boom, which fueled consumer spending and imports.
+Global Savings Glut: Some economists argue that a "global savings glut" (excess savings in other countries) has contributed to the US current account deficit. These excess savings flow into the US seeking higher returns, pushing down interest rates and potentially widening the deficit. 
+
+Key Takeaways:
+
+The US budget deficit can influence the current account deficit, particularly through its impact on interest rates and the value of the dollar.
+However, the relationship is not always straightforward, and other factors play a role.
+
+Analyzing the interplay between these deficits requires considering a broader range of economic variables and global trends.
+
+
+## 3.3 Visualize UK Percentages, initial run
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long_UK <- UKdata_annual_pct %>%
+  select(Year,
+         `Trade Balance_pct`,
+         `Income Balance_pct`, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))
+
+# Create the line graph for UK data
+ggplot(df_long_UK, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "UK Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1950, 2020, by = 10)) + 
+  theme_minimal() +
+  theme(legend.position = "right", 
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank())
+
+```
+
+## 3.3a UK Percentages take 2
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long_UK <- UKdata_annual_pct %>%
+  select(Year,
+         `Trade Balance_pct`,
+         `Income Balance_pct`, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))
+
+# Create the line graph for UK data with adjustments
+ggplot(df_long_UK, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "UK Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1950, 2020, by = 10)) +  # Start x-axis from 1950
+  theme_minimal() +
+  theme(legend.position = "bottom",       # Legend at the bottom
+        legend.box = "horizontal",      # Arrange legend items horizontally
+        legend.direction = "horizontal", # Legend items in a row
+        legend.key.width = unit(1, "cm"), # Adjust key width for better spacing
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank()) +
+  guides(color = guide_legend(nrow = 2))   # Split legend into two rows
+
+```
+
+## 3.3b UK Percentages take 3
+
+```{r}
+
+# --- Data Visualization ---
+
+# Select the relevant columns and convert to long format
+df_long_UK <- UKdata_annual_pct %>%
+  select(Year,
+         `Trade Balance_pct`,
+         `Income Balance_pct`, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))
+
+# Create the line graph for UK data with adjustments
+ggplot(df_long_UK, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "UK Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1950, 2020, by = 10)) + 
+  theme_minimal() +
+  theme(legend.position = "bottom",       
+        legend.box = "horizontal",      
+        legend.direction = "horizontal",
+        legend.key.width = unit(1, "cm"), 
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(1, 1, 1, 2, "cm")) + 
+  guides(color = guide_legend(nrow = 2))
+
+```
+
+## 3.3c UK Percentages take 4
+
+```{r}
+
+# Create the line graph for UK data with adjustments
+ggplot(df_long_UK, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "UK Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1950, 2020, by = 10)) + 
+  theme_minimal() +
+  theme(legend.position = "bottom",       
+        legend.box = "horizontal",      
+        legend.direction = "horizontal",
+        legend.key.width = unit(1, "cm"), 
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(1, 1, 1, 2, "cm")) + # Reset margins to smaller values
+  guides(color = guide_legend(nrow = 2))  # Keep legend in two rows
+```
+
+### Some Explanations
+Okay, let's break down this graph of the UK's Balance of Payments as a percentage of GDP, keeping in mind key events in UK history.
+
+Overall Trends:
+Generally small surpluses or deficits: For most of the period shown, the UK has maintained a relatively balanced position in its international transactions. The lines mostly hover around the 0% mark, indicating that large, persistent imbalances have been relatively rare.
+
+Current Account volatility: The Goods and Services Balance (primarily trade) and Current Account show more volatility than other components. This reflects the UK's exposure to global trade fluctuations and its dependence on imports for certain goods.
+
+Consistent Financial Account surplus: The UK has generally attracted more foreign investment than it has invested abroad, as shown by the consistent Financial Account surplus. This highlights the UK's role as a global financial center and a destination for foreign capital.
+
+Historical Context:
+Post-WWII Recovery (1950s-1960s): The early part of the graph likely reflects the UK's post-WWII recovery and its efforts to rebuild its economy. The fluctuations in the Goods and Services Balance might be related to challenges in re-establishing trade relationships and industrial capacity.
+
+Joining the EEC (1973): The UK's entry into the European Economic Community (EEC) in 1973 likely had an impact on trade patterns. You might see some shifts in the Goods and Services Balance around this period as trade with EEC members increased.
+
+Thatcher Era (1980s): The policies of Margaret Thatcher's government in the 1980s, focused on liberalization and deregulation, could have influenced foreign investment and financial flows, potentially explaining some of the trends in the Financial Account.
+
+Globalization (1990s-2000s): The increasing globalization of the world economy likely played a role in the growing interconnectedness of the UK's economy, with potential impacts on all components of the balance of payments.
+
+Global Financial Crisis (2008): The 2008 financial crisis likely had a significant impact, potentially contributing to the volatility seen in the Current Account and Financial Account around that period.
+
+Brexit (2016): The UK's decision to leave the European Union in 2016 likely introduced uncertainty and potentially affected trade and investment flows. You might observe some shifts in the trends after this event.
+
+Interpreting "Total Income Balance":
+The Total Income Balance, which includes primary income (compensation of employees, investment income) and secondary income (transfers), has generally been in a small deficit for the UK. This suggests that the UK has been a net payer of income to the rest of the world, possibly due to factors like:
+
+Outward investment: UK residents might be earning income from investments abroad, but this is offset by income paid to foreign investors in the UK.
+
+International aid and remittances: The UK's contributions to international aid and remittances sent by foreign workers in the UK could also contribute to the deficit.
+
+Important Considerations:
+This is a high-level interpretation, and a more in-depth analysis would require examining specific historical events and economic policies in more detail.
+
+Other factors not explicitly mentioned here, such as exchange rate movements, commodity price shocks, and technological changes, can also significantly influence the balance of payments.
+
+By combining the information in the graph with your knowledge of UK history, you can gain valuable insights into how economic and political events have shaped the UK's interactions with the rest of the world.
+
+### Recent Events
+
+You're right to ask about recent events! The UK has gone through some significant shifts lately, and those undoubtedly affect its economic position and balance of payments. Here's how we can connect the graph to recent policy decisions:
+
+1. Brexit:
+Trade Impacts: Leaving the EU single market and customs union has introduced new trade barriers with the UK's largest trading partner. This likely contributes to the volatility in the "Goods and Services Balance" we see in the graph, particularly after 2016. Negotiating new trade deals (like those with Australia and New Zealand) aims to offset this, but the full effects are still unfolding.
+Financial Services: The UK's position as a global financial hub is challenged by Brexit. Access to EU markets has become more complex, potentially affecting the long-term trend of the "Financial Account surplus". The UK is trying to adapt by focusing on new financial technologies (FinTech) and strengthening ties with non-EU markets.
+
+2. COVID-19 Pandemic:
+Economic Disruption: The pandemic caused major global disruptions, and the UK was no exception. Lockdowns and reduced consumer spending likely contributed to the dips we might see in the graph around 2020. Government support programs (furlough schemes, etc.) aimed to mitigate this, but their long-term effects on the balance of payments are still being assessed. 
+Supply Chain Issues: Global supply chain disruptions, exacerbated by the pandemic and Brexit, likely affected the UK's ability to import and export goods, further contributing to trade volatility. 
+3. Recent Policy Decisions:
+
+Fiscal Policy: The UK government has faced tough choices on taxation and spending. Recent policies include cuts to the foreign aid budget (affecting "Secondary Income Balance"), changes to corporation tax, and measures to address the cost of living crisis. These have complex interactions with the balance of payments, affecting investment flows, consumer spending, and government borrowing. 
+Energy Policy: The UK's energy policy, including its commitment to net-zero emissions and efforts to increase energy independence, has implications for its trade balance. For example, increased reliance on renewable energy sources could reduce reliance on imported fossil fuels, potentially improving the "Goods and Services Balance" in the long term.
+
+Connecting to the Graph:
+While it's too early to see the full impact of these recent events and policies reflected in the graph (which likely has data up to 2020 or 2021), we can anticipate some potential trends:
+
+Continued Current Account volatility: Brexit and ongoing global uncertainty will likely continue to cause fluctuations in trade and the Current Account.
+
+Pressure on Financial Account: Maintaining the UK's attractiveness for foreign investment will be crucial in the post-Brexit world.
+
+Shifting Income flows: Changes in international aid spending, along with the evolving relationship with the EU, may alter the "Total Income Balance".
+
+It's important to note:
+The balance of payments is a complex system influenced by many factors, both domestic and international. Isolating the impact of specific policies can be challenging.
+The long-term effects of recent events and policies are still unfolding, and ongoing monitoring of the balance of payments will be essential to understand their full implications.
+By staying informed about current events and policy decisions, you can better interpret the trends in the UK's balance of payments and gain insights into the challenges and opportunities facing the UK economy in the years to come.
+
+### More historical context from 1948
+You're right to dig deeper into the historical context! Here are some key events in UK history from 1948 to 2023 that could be relevant to interpreting the Balance of Payments graph, in addition to those we've already discussed:
+
+Economic and Political Events:
+1948-1951: Post-War Austerity: Following WWII, the UK faced rationing, economic controls, and rebuilding efforts. This period of austerity likely influenced trade patterns and capital flows.
+
+1956: Suez Crisis: The UK's involvement in the Suez Crisis had economic and political repercussions, potentially affecting its international standing and investment climate. 
+
+1970s: Economic Challenges: The 1970s were marked by economic instability, high inflation, and labor strikes in the UK. These challenges likely had an impact on the balance of payments, particularly on trade and investment flows. 
+
+1979-1990: Thatcherism: Margaret Thatcher's policies of privatization, deregulation, and market liberalization had a profound impact on the UK economy. These reforms likely influenced foreign investment, financial markets, and the balance of payments. 
+
+1990-1997: John Major's Premiership: This period included the UK's participation in the Gulf War and the Maastricht Treaty negotiations, which had implications for the UK's international role and economic ties. 
+
+1997-2010: New Labour and the Blair/Brown Years: This era saw economic growth, but also included the UK's involvement in the Iraq War and the response to the 2008 financial crisis, both of which had significant economic consequences.
+
+2010-2016: Coalition Government and the Cameron Years: This period was marked by austerity measures following the financial crisis and the lead-up to the Brexit referendum.
+
+Social and Cultural Changes:
+1960s: Social Liberalization: The "Swinging Sixties" brought significant social and cultural changes in the UK, potentially influencing consumer behavior and trade patterns. 
+
+1980s: Social Unrest: The 1980s saw periods of social unrest, including the miners' strike, which could have affected investor confidence and economic stability. 
+
+2010s: Rise of Social Media and Digital Economy: The increasing prominence of the digital economy and social media likely influenced trade in services and the flow of data across borders.
+
+Other Notable Events:
+1953: Coronation of Queen Elizabeth II: This event marked a significant moment in British history and could have had a positive impact on the country's image and tourism. 
+1966: England Wins the World Cup: This sporting victory boosted national morale and potentially had a small positive impact on the economy.  
+1981: Royal Wedding of Prince Charles and Lady Diana Spencer: This global media event attracted international attention and tourism to the UK. 
+2012: London Olympics: Hosting the Olympic Games provided a boost to the UK economy and showcased the country on a global stage. 
+
+Connecting to the Balance of Payments:
+While it's challenging to directly link every historical event to specific fluctuations in the balance of payments, these events provide context for understanding the broader economic and political climate in which the UK operated.
+For example, periods of economic instability or social unrest might be associated with increased volatility in the balance of payments, while periods of growth and stability might be associated with more balanced international transactions.
+By considering these historical events alongside the trends in the graph, you can gain a richer understanding of the factors that have shaped the UK's economic relationships with the rest of the world.
+
+## 3.4 Event Analysis: The Reintegration of East and West Germany
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# German reunification year
+reunification_year <- 1990
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`, 
+         `Income Balance_pct`, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for +/- 5 years around reunification
+  filter(Year >= reunification_year - 5 & Year <= reunification_year + 5)
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "German Balance of Payments (% of GDP) Around Reunification",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank()) + 
+  guides(color = guide_legend(nrow = 2))  # Arrange legend items in 2 rows
+
+```
+
+## 3.4a Reunification take two
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# German reunification year
+reunification_year <- 1990
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`, 
+         `Income Balance_pct`, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for +/- 6 years around reunification
+  filter(Year >= reunification_year - 6 & Year <= reunification_year + 6)
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "German Balance of Payments (% of GDP) Around Reunification",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1), breaks = seq(-3, 3, by = 1)) + # Set y-axis breaks at 1% intervals
+  scale_x_continuous(breaks = seq(reunification_year - 6, reunification_year + 6, by = 2)) + # Set x-axis breaks every 2 years
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank()) + 
+  guides(color = guide_legend(nrow = 2))  # Arrange legend items in 2 rows
+
+
+```
+
+## 3.4b Reunification take 3
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# German reunification year
+reunification_year <- 1990
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`, 
+         `Income Balance_pct`, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for +/- 6 years around reunification
+  filter(Year >= reunification_year - 6 & Year <= reunification_year + 6)
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "German Balance of Payments (% of GDP) Around Reunification",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1), breaks = seq(-3, 5, by = 1), limits = c(-3, 5)) + # Set y-axis breaks and limits
+  scale_x_continuous(breaks = seq(reunification_year - 6, reunification_year + 6, by = 2)) + # Set x-axis breaks every 2 years
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank()) + 
+  guides(color = guide_legend(nrow = 2))  # Arrange legend items in 2 rows
+
+```
+
+## 3.4c Reunificatoin word 1
+
+```{r}
+
+# German reunification year
+reunification_year <- 1990
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`, 
+         `Income Balance_pct`, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for +/- 6 years around reunification
+  filter(Year >= reunification_year - 6 & Year <= reunification_year + 6)
+
+# Create the line graph with adjustments for Word document
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "German Balance of Payments (% of GDP) Around Reunification",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1), 
+                     breaks = seq(-3, 5, by = 1), 
+                     limits = c(-3, 5)) + 
+  scale_x_continuous(breaks = seq(reunification_year - 6, reunification_year + 6, by = 2)) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.line = element_line(color = "black"),
+    panel.grid.minor = element_blank(),
+    # Increase font sizes for better readability
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 11),
+    plot.title = element_text(size = 14) 
+  ) +
+  guides(color = guide_legend(nrow = 2)) 
+
+# Save the plot with appropriate dimensions and resolution for Word
+ggsave("german_balance_of_payments_reunification.png", width = 8, height = 6, dpi = 300)
+
+
+```
+
+## asd
+
+```{r}
+
+# German reunification year
+reunification_year <- 1990
+
+# Prepare the data with "Old Capital Account Balance"
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account Balance_pct` = 
+           `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>%
+  select(Year, 
+         `Current Account Balance_pct`,
+         `Old Capital Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for +/- 6 years around reunification
+  filter(Year >= reunification_year - 6 & Year <= reunification_year + 6)
+
+# Create the line graph with adjustments for Word document (no title)
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1), 
+                     breaks = seq(-3, 5, by = 1), 
+                     limits = c(-3, 5)) + 
+  scale_x_continuous(breaks = seq(reunification_year - 6, reunification_year + 6, by = 2)) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.line = element_line(color = "black"),
+    panel.grid.minor = element_blank(),
+    # Increase font sizes for better readability
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 11) 
+  ) +
+  guides(color = guide_legend(nrow = 1)) # Legend in one row
+
+# Save the plot with reunification in the filename
+ggsave("german_balance_of_payments_reunification.png", width = 8, height = 6, dpi = 300)
+
+```
+
+## 123
+
+```{r}
+# German reunification year
+reunification_year <- 1990
+
+# Prepare the data with "Old Capital Account Balance"
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account Balance_pct` = 
+           `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>%
+  select(Year, 
+         `Current Account Balance_pct`,
+         `Old Capital Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for +/- 6 years around reunification
+  filter(Year >= reunification_year - 6 & Year <= reunification_year + 6)
+
+# Create the line graph with adjustments for Word document (no title)
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(x = "Year",
+       y = "Percentage of GDP",
+       color = "as % of GDP") + # Remove "Balance" from legend title
+  scale_y_continuous(labels = scales::percent_format(scale = 1), 
+                     breaks = seq(-3, 5, by = 1), 
+                     limits = c(-3, 5)) + 
+  scale_x_continuous(breaks = seq(reunification_year - 6, reunification_year + 6, by = 2)) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.line = element_line(color = "black"),
+    panel.grid.minor = element_blank(),
+    # Increase font sizes for better readability
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 11) 
+  ) +
+  guides(color = guide_legend(nrow = 1)) + # Legend in one row
+  
+  # Add a label at 0% 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray") +
+  annotate("text", x = reunification_year - 5, y = 0.2, label = "0%", color = "gray", size = 4) + 
+
+  # Add a vertical line for reunification with a label
+  geom_vline(xintercept = reunification_year, linetype = "dotted", color = "black") +
+  annotate("text", x = reunification_year, y = 4.5, label = "Reunification", angle = 90, vjust = 1.2, size = 4)
+
+# Save the plot with reunification in the filename
+ggsave("german_balance_of_payments_reunification.png", width = 8, height = 6, dpi = 300)
+```
+
+## FINAL reunificaiton try
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+library(dplyr) 
+
+# German reunification year
+reunification_year <- 1990
+
+# Prepare the data with "Old Capital Account Balance"
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account Balance_pct` = 
+           `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>%
+  select(Year, 
+         `Current Account Balance_pct`,
+         `Old Capital Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for +/- 6 years around reunification
+  filter(Year >= reunification_year - 6 & Year <= reunification_year + 6)
+
+# Create the line graph with adjustments for Word document (no title)
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(x = "Year",
+       y = "Percentage of GDP",
+       color = "as % of GDP") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1), 
+                     breaks = seq(-3, 5, by = 1), 
+                     limits = c(-3, 5)) + 
+  scale_x_continuous(breaks = seq(reunification_year - 6, reunification_year + 6, by = 2)) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.line = element_line(color = "black"),
+    panel.grid.minor = element_blank(),
+    # Increase font sizes for better readability
+    axis.title = element_text(size = 14), 
+    axis.text = element_text(size = 12), 
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 13)
+  ) +
+  guides(color = guide_legend(nrow = 1)) + 
+  
+  # Add a black dotted line at 0% (without label)
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") +
+
+  # Add a vertical line for reunification with a label (moved further down and left)
+  geom_vline(xintercept = reunification_year, linetype = "dotted", color = "black") +
+  annotate("text", x = reunification_year - 0.4, y = 2, label = "Reunification", 
+           angle = 90, vjust = 1.2, hjust = 1.1, size = 5)  # Adjusted position further
+
+# Save the plot with reunification in the filename
+ggsave("german_balance_of_payments_reunification1.png", width = 8, height = 4, dpi = 300)
+
+```
+
+## Trade balance income balance reuni
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+library(dplyr) 
+
+# German reunification year
+reunification_year <- 1990
+
+# Prepare the data with Trade Balance and Income Balance
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`, 
+         `Income Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for +/- 6 years around reunification
+  filter(Year >= reunification_year - 6 & Year <= reunification_year + 6)
+
+# Create the line graph 
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(x = "Year",
+       y = "Percentage of GDP",
+       color = "as % of GDP") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1), 
+                     breaks = seq(-3, 5, by = 1), 
+                     limits = c(-3, 5)) + 
+  scale_x_continuous(breaks = seq(reunification_year - 6, reunification_year + 6, by = 2)) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.line = element_line(color = "black"),
+    panel.grid.minor = element_blank(),
+    # Increase font sizes for better readability
+    axis.title = element_text(size = 14), 
+    axis.text = element_text(size = 12), 
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 13)
+  ) +
+  guides(color = guide_legend(nrow = 1)) + 
+  
+  # Add a black dotted line at 0% (without label)
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") +
+
+  # Add a vertical line for reunification with a label (moved further down and left)
+  geom_vline(xintercept = reunification_year, linetype = "dotted", color = "black") +
+  annotate("text", x = reunification_year - 0.4, y = 1, label = "Reunification", 
+           angle = 90, vjust = 1.2, hjust = 1.1, size = 5) 
+
+# Save the plot with reunification in the filename
+ggsave("german_balance_of_payments_reunification_trade.png", width = 8, height = 6, dpi = 300)
+
+```
+
+## reuni trade again
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+library(dplyr) 
+
+# German reunification year
+reunification_year <- 1990
+
+# Prepare the data with Trade Balance and Income Balance
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`, 
+         `Income Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for +/- 6 years around reunification
+  filter(Year >= reunification_year - 6 & Year <= reunification_year + 6)
+
+# Create the line graph 
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(x = "Year",
+       y = "Percentage of GDP",
+       color = "as % of GDP") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1), 
+                     breaks = seq(-2, 5, by = 1),  # Adjusted y-axis breaks
+                     limits = c(-2, 5)) +         # Adjusted y-axis limits
+  scale_x_continuous(breaks = seq(reunification_year - 6, reunification_year + 6, by = 2)) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.line = element_line(color = "black"),
+    panel.grid.minor = element_blank(),
+    # Increase font sizes for better readability
+    axis.title = element_text(size = 14), 
+    axis.text = element_text(size = 12), 
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 13)
+  ) +
+  guides(color = guide_legend(nrow = 1)) + 
+  
+  # Add a black dotted line at 0% (without label)
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") +
+
+  # Add a vertical line for reunification with a label (moved up and right)
+  geom_vline(xintercept = reunification_year, linetype = "dotted", color = "black") +
+  annotate("text", x = reunification_year + 0.2, y = 1.5, label = "Reunification", 
+           angle = 90, vjust = 1.2, hjust = -0.2, size = 5)  # Adjusted position
+
+# Save the plot with reunification in the filename (height adjusted)
+ggsave("german_balance_of_payments_reunification_againtrade.png", width = 8, height = 4, dpi = 300)
+
+```
+
+
+### Some Explanations
+
+Key Observations:
+Trade Surplus: Germany consistently had a trade surplus (more exports than imports) during this period, as seen by the positive "Total Trade Balance."
+
+Current Account Shift: The "Current Account Balance" shows a surplus leading up to reunification, followed by a deficit after 1990. This suggests Germany was investing heavily in the East after reunification.
+
+Financial Account Mirror: The "Financial Account Balance" largely mirrors the "Current Account Balance" (but with opposite signs). This is because a current account deficit is usually financed by inflows of capital (e.g., borrowing or selling assets).
+
+Capital Account Stability: The "Capital Account Balance" remains relatively stable and close to zero.
+Income Fluctuations: The "Total Income Balance" shows some fluctuations but generally remains positive.
+Reunification Impact:
+
+The graph suggests that German reunification had a significant impact on the country's balance of payments. The shift from a current account surplus to a deficit indicates the substantial investments and transfers made to rebuild the East German economy.
+
+Important Note:
+
+It's crucial to remember that this graph provides a simplified view.  A deeper analysis would require examining the underlying components of each balance in more detail.
+
+## 3.5 Event Analysis: The Maastricht Treaty's Effect on Germany
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+library(dplyr)
+
+# Maastricht Treaty came into effect
+maastricht_year <- 1993
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`, 
+         `Income Balance_pct`, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for 1995 to 2015
+  filter(Year >= 1995 & Year <= 2015) 
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "German Balance of Payments (% of GDP) After Maastricht Treaty",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank()) + 
+  guides(color = guide_legend(nrow = 2)) +
+  # Add a vertical line for the Maastricht Treaty
+  geom_vline(xintercept = maastricht_year, linetype = "dashed", color = "grey") +
+  annotate("text", x = maastricht_year, y = max(df_long$Percentage * 100), label = "Maastricht Treaty", angle = 90, vjust = 1.2, hjust = -0.1, color = "grey")
+
+```
+
+
+## 3.5a Maastricht Take 2
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+library(dplyr)
+
+# Key dates
+maastricht_year <- 1993
+euro_accounting_year <- 1999
+euro_cash_year <- 2002
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`, 
+         `Income Balance_pct`, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for 1990 to 2010
+  filter(Year >= 1990 & Year <= 2010) 
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "German Balance of Payments (% of GDP) and the Euro",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank()) + 
+  guides(color = guide_legend(nrow = 2)) +
+  # Add vertical lines for key events
+  geom_vline(xintercept = maastricht_year, linetype = "dashed", color = "grey") +
+  annotate("text", x = maastricht_year, y = max(df_long$Percentage * 100), label = "Maastricht Treaty", angle = 90, vjust = 1.2, hjust = -0.1, color = "grey") +
+  geom_vline(xintercept = euro_accounting_year, linetype = "dashed", color = "blue") +
+  annotate("text", x = euro_accounting_year, y = max(df_long$Percentage * 100), label = "Euro (Accounting)", angle = 90, vjust = 1.2, hjust = -0.1, color = "blue") +
+  geom_vline(xintercept = euro_cash_year, linetype = "dashed", color = "green") +
+  annotate("text", x = euro_cash_year, y = max(df_long$Percentage * 100), label = "Euro (Cash)", angle = 90, vjust = 1.2, hjust = -0.1, color = "green")
+
+########## FIX LABELS
+#
+```
+
+## 3.5b Maastricht Take 3
+
+```{r}
+
+# Key dates
+maastricht_year <- 1993
+euro_accounting_year <- 1999
+euro_cash_year <- 2002
+agenda_2010_year <- 2003
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+          `Trade Balance_pct`, 
+          `Income Balance_pct`, 
+          `Current Account Balance_pct`, 
+          `Capital Account Balance_pct`, 
+          `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for 1990 to 2010
+  filter(Year >= 1990 & Year <= 2010) 
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "German Balance of Payments (% of GDP) and the Euro",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank()) + 
+  guides(color = guide_legend(nrow = 3)) + # Legend with three rows
+  # Add vertical lines for key events (all black)
+  geom_vline(xintercept = maastricht_year, linetype = "dashed", color = "black") +
+  annotate("text", x = maastricht_year, y = max(df_long$Percentage * 100), label = "Maastricht Treaty", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 3) + # Increased font size
+  geom_vline(xintercept = euro_accounting_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_accounting_year, y = max(df_long$Percentage * 100), label = "Euro (Accounting)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 3) + # Increased font size
+  geom_vline(xintercept = euro_cash_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_cash_year, y = max(df_long$Percentage * 100), label = "Euro (Cash)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 3) + # Increased font size
+  geom_vline(xintercept = agenda_2010_year, linetype = "dashed", color = "black") + # Added Agenda 2010 line
+  annotate("text", x = agenda_2010_year, y = max(df_long$Percentage * 100), label = "Agenda 2010", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 3)  # Added Agenda 2010 label
+
+```
+
+## 3.5c Maastricht Take 4
+
+```{r}
+
+# Key dates
+maastricht_year <- 1993
+euro_accounting_year <- 1999
+euro_cash_year <- 2002
+agenda_2010_year <- 2003
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+          `Current Account Balance_pct`, 
+          `Capital Account Balance_pct`, 
+          `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for 1990 to 2010
+  filter(Year >= 1990 & Year <= 2010) 
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "German Balance of Payments (% of GDP) and the Euro",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank()) + 
+  guides(color = guide_legend(nrow = 2)) + # Legend with three rows
+  # Add vertical lines for key events (all black)
+  geom_vline(xintercept = maastricht_year, linetype = "dashed", color = "black") +
+  annotate("text", x = maastricht_year, y = 6, label = "Maastricht Treaty", angle = 90, vjust = 1.2, hjust = -0.1, color = "black") + # Adjusted y position
+  geom_vline(xintercept = euro_accounting_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_accounting_year, y = 6, label = "Euro (Accounting)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black") + # Adjusted y position
+  geom_vline(xintercept = euro_cash_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_cash_year, y = 6, label = "Euro (Cash)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black") + # Adjusted y position
+  geom_vline(xintercept = agenda_2010_year, linetype = "dashed", color = "black") + # Added Agenda 2010 line
+  annotate("text", x = agenda_2010_year, y = 6, label = "Agenda 2010", angle = 90, vjust = 1.2, hjust = -0.1, color = "black")  # Added Agenda 2010 label, adjusted y position
+
+```
+
+## 3.5d Maastricht Take 5
+
+```{r}
+
+# Key dates
+maastricht_year <- 1993
+euro_accounting_year <- 1999
+euro_cash_year <- 2002
+agenda_2010_year <- 2003
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+          `Trade Balance_pct`, 
+          `Income Balance_pct`, 
+          `Current Account Balance_pct`, 
+          `Capital Account Balance_pct`, 
+          `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for 1990 to 2010
+  filter(Year >= 1990 & Year <= 2010) 
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "German Balance of Payments (% of GDP) and the Euro",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank()) + 
+  guides(color = guide_legend(nrow = 3)) + # Legend with three rows
+  # Add vertical lines for key events (all black)
+  geom_vline(xintercept = maastricht_year, linetype = "dashed", color = "black") +
+  annotate("text", x = maastricht_year, y = 1.5, label = "Maastricht", angle = 90, vjust = 1.2, hjust = -0.1, color = "black") + # Lowered y position
+  geom_vline(xintercept = euro_accounting_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_accounting_year, y = 1.5, label = "Euro (Intro)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black") + # Lowered y position
+  geom_vline(xintercept = euro_cash_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_cash_year, y = 1.5, label = "Euro (Rollout)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black") + # Lowered y position
+  geom_vline(xintercept = agenda_2010_year, linetype = "dashed", color = "black") + # Added Agenda 2010 line
+  annotate("text", x = agenda_2010_year, y = 1.5, label = "Agenda 2010", angle = 90, vjust = 1.2, hjust = -0.1, color = "black")  # Added Agenda 2010 label, lowered y position
+
+```
+
+## 3.5e new
+
+```{r}
+
+# Key dates
+maastricht_year <- 1993
+euro_accounting_year <- 1999
+euro_cash_year <- 2002
+agenda_2010_year <- 2003
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`, 
+         `Income Balance_pct`, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for 1990 to 2010
+  filter(Year >= 1990 & Year <= 2010) 
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "German Balance of Payments (% of GDP) and the Euro",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = " ") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank()) + 
+  guides(color = guide_legend(nrow = 3)) + # Legend with three rows
+  # Add vertical lines for key events (all black)
+  geom_vline(xintercept = maastricht_year, linetype = "dashed", color = "black") +
+  annotate("text", x = maastricht_year, y = 1.5, label = "Maastricht", angle = 90, vjust = 1.2, hjust = -0.1, color = "black") + # Lowered y position
+  geom_vline(xintercept = euro_accounting_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_accounting_year, y = 1.5, label = "Euro (Intro)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black") + # Lowered y position
+  geom_vline(xintercept = euro_cash_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_cash_year, y = 1.5, label = "Euro (Rollout)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black") + # Lowered y position
+  geom_vline(xintercept = agenda_2010_year, linetype = "dashed", color = "black") + # Added Agenda 2010 line
+  annotate("text", x = agenda_2010_year, y = 1.5, label = "Agenda 2010", angle = 90, vjust = 1.2, hjust = -0.1, color = "black")  # Added Agenda 2010 label, lowered y position
+
+
+
+```
+
+## 3.5 f with output
+
+```{r}
+
+# Key dates
+maastricht_year <- 1993
+euro_accounting_year <- 1999
+euro_cash_year <- 2002
+agenda_2010_year <- 2003
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for 1990 to 2010
+  filter(Year >= 1990 & Year <= 2010) 
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "German Balance of Payments (% of GDP) and the Euro",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = " ") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank()) + 
+  guides(color = guide_legend(nrow = 3)) + # Legend with three rows
+  # Add vertical lines for key events (all black)
+  geom_vline(xintercept = maastricht_year, linetype = "dashed", color = "black") +
+  annotate("text", x = maastricht_year, y = 1.5, label = "Maastricht", angle = 90, vjust = 1.2, hjust = -0.1, color = "black") + # Lowered y position
+  geom_vline(xintercept = euro_accounting_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_accounting_year, y = 1.5, label = "Euro (Intro)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black") + # Lowered y position
+  geom_vline(xintercept = euro_cash_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_cash_year, y = 1.5, label = "Euro (Rollout)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black") + # Lowered y position
+  geom_vline(xintercept = agenda_2010_year, linetype = "dashed", color = "black") + # Added Agenda 2010 line
+  annotate("text", x = agenda_2010_year, y = 1.5, label = "Agenda 2010", angle = 90, vjust = 1.2, hjust = -0.1, color = "black")  # Added Agenda 2010 label, lowered y position
+
+# Save the plot as a PNG file
+ggsave("german_balance_of_payments_maastricht.png", plot, device = "png", width = 8, height = 5)
+
+```
+
+## 3.5f output 2
+
+```{r}
+# Key dates
+maastricht_year <- 1993
+euro_accounting_year <- 1999
+euro_cash_year <- 2002
+agenda_2010_year <- 2003
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  # Filter data for 1990 to 2010
+  filter(Year >= 1990 & Year <= 2010) 
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "German Balance of Payments (% of GDP) and the Euro",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = " ") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 14)) +  # Increase overall text size
+  guides(color = guide_legend(nrow = 3)) + # Legend with three rows
+  # Add vertical lines for key events (all black)
+  geom_vline(xintercept = maastricht_year, linetype = "dashed", color = "black") +
+  annotate("text", x = maastricht_year, y = 1.5, label = "Maastricht", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4) + # Increase annotation size
+  geom_vline(xintercept = euro_accounting_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_accounting_year, y = 1.5, label = "Euro (Intro)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4) + # Increase annotation size
+  geom_vline(xintercept = euro_cash_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_cash_year, y = 1.5, label = "Euro (Rollout)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4) + # Increase annotation size
+  geom_vline(xintercept = agenda_2010_year, linetype = "dashed", color = "black") + # Added Agenda 2010 line
+  annotate("text", x = agenda_2010_year, y = 1.5, label = "Agenda 2010", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4)  # Added Agenda 2010 label, lowered y position, increased size
+
+
+# Save the plot as a PNG file
+ggsave("german_balance_of_payments_maastricht2.png", plot, device = "png", width = 8, height = 5)
+```
+
+
+## 3.5g output 3
+
+```{r}
+
+# Key dates
+maastricht_year <- 1993
+euro_accounting_year <- 1999
+euro_cash_year <- 2002
+agenda_2010_year <- 2003
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%  # Remove "_pct" from Balance names
+  # Filter data for 1990 to 2010
+  filter(Year >= 1990 & Year <= 2010) 
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "German Balance of Payments (% of GDP) and the Euro",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = " ") +  # Remove legend title
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 14)) +  # Increase overall text size
+  guides(color = guide_legend(nrow = 1)) + # Legend with one row 
+  # Add vertical lines for key events (all black)
+  geom_vline(xintercept = maastricht_year, linetype = "dashed", color = "black") +
+  annotate("text", x = maastricht_year, y = 1.5, label = "Maastricht", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4) + # Increase annotation size
+  geom_vline(xintercept = euro_accounting_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_accounting_year, y = 1.5, label = "Euro (Intro)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4) + # Increase annotation size
+  geom_vline(xintercept = euro_cash_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_cash_year, y = 1.5, label = "Euro (Rollout)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4) + # Increase annotation size
+  geom_vline(xintercept = agenda_2010_year, linetype = "dashed", color = "black") + # Added Agenda 2010 line
+  annotate("text", x = agenda_2010_year, y = 1.5, label = "Agenda 2010", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4)  # Added Agenda 2010 label, lowered y position, increased size
+
+
+# Save the plot as a PNG file
+ggsave("german_balance_of_payments_maastricht3.png", plot, device = "png", width = 8, height = 5)
+
+```
+
+## 3.5h
+
+```{r}
+
+# Key dates
+maastricht_year <- 1993
+euro_accounting_year <- 1999
+euro_cash_year <- 2002
+agenda_2010_year <- 2003
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, " Balance_pct")) %>%  # Remove " Balance_pct" from Balance names
+  # Filter data for 1990 to 2010
+  filter(Year >= 1990 & Year <= 2010) 
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = NULL, # Remove graph title
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +  # Set legend title 
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 14)) +  # Increase overall text size
+  guides(color = guide_legend(nrow = 1)) + # Legend with one row 
+  # Add vertical lines for key events (all black)
+  geom_vline(xintercept = maastricht_year, linetype = "dashed", color = "black") +
+  annotate("text", x = maastricht_year, y = 1.5, label = "Maastricht", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4) + # Increase annotation size
+  geom_vline(xintercept = euro_accounting_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_accounting_year, y = 1.5, label = "Euro (Intro)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4) + # Increase annotation size
+  geom_vline(xintercept = euro_cash_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_cash_year, y = 1.5, label = "Euro (Rollout)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4) + # Increase annotation size
+  geom_vline(xintercept = agenda_2010_year, linetype = "dashed", color = "black") + # Added Agenda 2010 line
+  annotate("text", x = agenda_2010_year, y = 1.5, label = "Agenda 2010", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4)  # Added Agenda 2010 label, lowered y position, increased size
+
+
+# Save the plot as a PNG file
+ggsave("german_balance_of_payments_maastricht4.png", plot, device = "png", width = 8, height = 5)
+
+```
+
+
+## 3.5asd
+
+```{r}
+
+# Key dates
+maastricht_year <- 1993
+euro_accounting_year <- 1999
+euro_cash_year <- 2002
+agenda_2010_year <- 2003
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account_pct` =  `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>% # Create "Old Capital Account"
+  select(-`Capital Account Balance_pct`, -`Financial Account Balance_pct`) %>% # Remove individual capital and financial accounts
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%  # Remove "_pct" from Balance names
+  # Filter data for 1990 to 2010
+  filter(Year >= 1990 & Year <= 2010) 
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = NULL, # Remove graph title
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +  # Set legend title 
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 14)) +  # Increase overall text size
+  guides(color = guide_legend(nrow = 1)) + # Legend with one row 
+  # Add vertical lines for key events (all black)
+  geom_vline(xintercept = maastricht_year, linetype = "dashed", color = "black") +
+  annotate("text", x = maastricht_year, y = 1.5, label = "Maastricht", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4) + # Increase annotation size
+  geom_vline(xintercept = euro_accounting_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_accounting_year, y = 1.5, label = "Euro (Intro)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4) + # Increase annotation size
+  geom_vline(xintercept = euro_cash_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_cash_year, y = 1.5, label = "Euro (Rollout)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4) + # Increase annotation size
+  geom_vline(xintercept = agenda_2010_year, linetype = "dashed", color = "black") + # Added Agenda 2010 line
+  annotate("text", x = agenda_2010_year, y = 1.5, label = "Agenda 2010", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4)  # Added Agenda 2010 label, lowered y position, increased size
+
+
+# Save the plot as a PNG file
+ggsave("german_balance_of_payments_maastricht5.png", plot, device = "png", width = 8, height = 5)
+
+```
+
+## 3.5asdasd
+
+```{r}
+
+# Key dates
+maastricht_year <- 1993
+euro_accounting_year <- 1999
+euro_cash_year <- 2002
+agenda_2010_year <- 2003
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Current Account Balance_pct`, 
+         `Capital Account Balance_pct`, 
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account_pct` =  `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>% # Create "Old Capital Account"
+  select(-`Capital Account Balance_pct`, -`Financial Account Balance_pct`) %>% # Remove individual capital and financial accounts
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%  # Remove "_pct" from Balance names
+  # Filter data for 1990 to 2010
+  filter(Year >= 1990 & Year <= 2010) 
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1.2) +  # Slightly thicker lines
+  labs(title = NULL, # Remove graph title
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +  # Set legend title 
+  scale_y_continuous(labels = scales::percent_format(scale = 1), 
+                     breaks = seq(8, -3, by = -1), # Set y-axis breaks from 8% to -3% in 1% increments
+                     limits = c(-3, 8)) +  # Set y-axis limits
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 16), # Increase overall text size further
+        axis.text = element_text(size = 14) # Increase axis text size
+        ) +  
+  guides(color = guide_legend(nrow = 1)) + # Legend with one row 
+  # Add vertical lines for key events (all black)
+  geom_vline(xintercept = maastricht_year, linetype = "dashed", color = "black") +
+  annotate("text", x = maastricht_year, y = 1.5, label = "Maastricht", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4.5) + # Larger annotation size
+  geom_vline(xintercept = euro_accounting_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_accounting_year, y = 1.5, label = "Euro (Intro)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4.5) + # Larger annotation size
+  geom_vline(xintercept = euro_cash_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_cash_year, y = 1.5, label = "Euro (Rollout)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4.5) + # Larger annotation size
+  geom_vline(xintercept = agenda_2010_year, linetype = "dashed", color = "black") + # Added Agenda 2010 line
+  annotate("text", x = agenda_2010_year, y = 1.5, label = "Agenda 2010", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4.5) + # Larger annotation size
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") # Add dotted line at zero
+
+
+# Save the plot as a PNG file
+ggsave("german_balance_of_payments_maastricht7.png", plot, device = "png", width = 8, height = 5)
+
+```
+
+## 3.5 k
+
+```{r}
+
+# Key dates
+maastricht_year <- 1993
+euro_accounting_year <- 1999
+euro_cash_year <- 2002
+agenda_2010_year <- 2003
+
+# Select the relevant columns and convert to long format
+df_long <- GERdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`, 
+         `Income Balance_pct`) %>%
+  pivot_longer(cols = -Year, 
+               names_to = "Balance", 
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%  # Remove "_pct" from Balance names
+  # Filter data for 1990 to 2010
+  filter(Year >= 1990 & Year <= 2010) 
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1.2) +  # Slightly thicker lines
+  labs(title = NULL, # Remove graph title
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +  # Set legend title 
+  scale_y_continuous(labels = scales::percent_format(scale = 1), 
+                     breaks = seq(8, -3, by = -1), # Set y-axis breaks from 8% to -3% in 1% increments
+                     limits = c(-3, 8)) +  # Set y-axis limits
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        axis.line = element_line(color = "black"), 
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 16), # Increase overall text size further
+        axis.text = element_text(size = 14) # Increase axis text size
+        ) +  
+  guides(color = guide_legend(nrow = 1)) + # Legend with one row 
+  # Add vertical lines for key events (all black)
+  geom_vline(xintercept = maastricht_year, linetype = "dashed", color = "black") +
+  annotate("text", x = maastricht_year, y = 1.5, label = "Maastricht", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4.5) + # Larger annotation size
+  geom_vline(xintercept = euro_accounting_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_accounting_year, y = 1.5, label = "Euro (Intro)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4.5) + # Larger annotation size
+  geom_vline(xintercept = euro_cash_year, linetype = "dashed", color = "black") +
+  annotate("text", x = euro_cash_year, y = 1.5, label = "Euro (Rollout)", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4.5) + # Larger annotation size
+  geom_vline(xintercept = agenda_2010_year, linetype = "dashed", color = "black") + # Added Agenda 2010 line
+  annotate("text", x = agenda_2010_year, y = 1.5, label = "Agenda 2010", angle = 90, vjust = 1.2, hjust = -0.1, color = "black", size = 4.5) + # Larger annotation size
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") # Add dotted line at zero
+
+
+# Save the plot as a PNG file
+ggsave("german_balance_of_payments_maastricht9.png", plot, device = "png", width = 8, height = 5)
+
+```
+
+
+
+### Some Explanation
+
+This chart provides a fascinating glimpse into Germany's economic performance in the context of significant historical events. Here's a breakdown of the key observations and potential interpretations:
+
+1. Maastricht Treaty (1993):
+The Maastricht Treaty laid the groundwork for the European Union and the single currency, the Euro.
+In the years immediately following the treaty, we see a slight dip in the current account balance (green line) and the total trade balance (purple line). This might reflect initial uncertainties and adjustments as Germany integrated further with its European partners.
+
+2. Euro (Intro - Accounting, 1999):
+This marks the official launch of the Euro as an accounting currency.
+Notably, Germany's current account balance starts to climb steadily after this point, indicating increasing strength in its export sector. This could be attributed to increased price competitiveness due to the stability of the Euro and reduced exchange rate risks within the Eurozone.
+
+3. Euro (Rollout - Cash, 2002):
+The Euro becomes physical currency, replacing the Deutsche Mark.
+The upward trend in the current account balance continues, suggesting a positive impact of the Euro on German exports. The financial account balance (light green line) also shows significant volatility around this period, possibly reflecting capital flows and investment adjustments related to the Euro transition.
+
+4. Agenda 2010 (2003):
+Agenda 2010 was a set of economic reforms aimed at boosting competitiveness and reducing unemployment.
+Following these reforms, we see a further surge in Germany's current account surplus, suggesting that the reforms may have contributed to increased export performance and economic growth.
+Other Factors and Interpretations:
+
+Global Economic Conditions: The chart also reflects broader global economic trends. For example, the decline in the current account balance around 2008-2009 likely corresponds to the global financial crisis.
+
+German Manufacturing Prowess: Germany's consistent trade surplus throughout this period highlights its strength in manufacturing and export-oriented industries, particularly in sectors like automobiles and machinery.
+
+Eurozone Imbalances: The large and persistent German current account surplus has also been a source of debate and tension within the Eurozone, with some arguing that it reflects imbalances and a lack of domestic demand within Germany.
+
+In summary:
+The chart illustrates how Germany's balance of payments has been influenced by key historical milestones, particularly those related to European integration. While the Euro appears to have had a positive effect on German exports, other factors such as economic reforms and global conditions also played a role. Understanding these trends is crucial for analyzing Germany's economic performance and its role within the global economy.
+
+### Agenda 2010
+What was it?
+Agenda 2010 was a package of labor market and welfare reforms introduced by then-Chancellor Gerhard Schröder's government in 2003.  Germany was experiencing high unemployment and sluggish economic growth at the time, and the reforms were intended to address these issues.
+
+Key elements of Agenda 2010:
+Labor market reforms: These included making it easier for businesses to hire and fire employees, and promoting part-time and temporary work.
+
+Welfare reforms: These involved cuts to unemployment benefits and the creation of a new social benefit program called "Hartz IV," which merged unemployment and welfare benefits.
+
+Tax cuts: The government also implemented tax cuts for both workers and corporations.
+
+Political debate surrounding Agenda 2010:
+The reforms were highly controversial and sparked widespread protests and debate.
+
+Supporters argued that the reforms were necessary to modernize the German economy and make it more competitive. They believed that the reforms would lead to lower unemployment and higher economic growth.
+
+Critics argued that the reforms were unfair and would lead to increased poverty and inequality. They were particularly concerned about the cuts to welfare benefits and the easing of labor market regulations.
+Long-term effects:
+
+Wages: There is evidence that Agenda 2010 contributed to wage stagnation in Germany, particularly for low-skilled workers.
+
+Profits: The reforms likely benefited businesses by reducing labor costs and increasing flexibility.
+
+Trade: The reforms may have improved Germany's trade competitiveness by lowering labor costs. This could have contributed to Germany's large trade surpluses in the years following the reforms.
+
+European Union: Germany's strong economic performance after Agenda 2010 may have put pressure on other EU countries to adopt similar reforms. This contributed to a broader trend towards labor market deregulation and fiscal austerity in the EU.
+
+Overall:
+Agenda 2010 was a landmark reform package that had a profound impact on Germany and the broader European Union. While it may have contributed to Germany's economic success in the 2000s and 2010s, it also had significant social costs, including increased inequality and wage stagnation. The reforms remain a subject of debate in Germany today.
+
+## 3.6 Event Analysis: Britain Enters the European Economic Community
+
+```{r}
+
+# Determine the range of years to display
+year_of_entry <- 1973  # Year UK entered the EEC
+years_to_display <- c((year_of_entry - 5):(year_of_entry + 5))
+
+# Filter the data to include only the desired years
+df_filtered_UK <- df_long_UK %>%
+  filter(Year %in% years_to_display)
+
+# Create the line graph
+ggplot(df_filtered_UK, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "UK Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = years_to_display) +  # Set x-axis breaks to the desired years
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.box = "horizontal",
+        legend.direction = "horizontal",
+        legend.key.width = unit(1, "cm"),
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(1, 1, 1, 2, "cm")) + 
+  guides(color = guide_legend(nrow = 2))
+
+```
+
+## 3.6b Britain EEC Take Two
+
+```{r}
+
+# Determine the range of years to display
+year_of_entry <- 1973  # Year UK entered the EEC
+years_to_display <- c((year_of_entry - 5):(year_of_entry + 5))
+
+# Filter the data to include only the desired years
+df_filtered_UK <- df_long_UK %>%
+  filter(Year %in% years_to_display)
+
+# Create the line graph
+ggplot(df_filtered_UK, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "UK Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = years_to_display) + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.box = "horizontal",
+        legend.direction = "horizontal",
+        legend.key.width = unit(1, "cm"),
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(1, 1, 1, 2, "cm")) + 
+  guides(color = guide_legend(nrow = 2)) +
+  
+  # Add vertical line for EEC entry
+  geom_vline(xintercept = year_of_entry, linetype = "dashed", color = "grey") +
+  annotate("text", x = year_of_entry + 0.5, y = max(df_filtered_UK$Percentage * 100), 
+           label = "EEC Entry", angle = 90, vjust = 1, hjust = 0, color = "grey")
+
+```
+
+## 3.6c Britain EEC Take 3
+
+```{r}
+
+# Determine the range of years to display
+year_of_entry <- 1973  # Year UK entered the EEC
+years_to_display <- c((year_of_entry - 5):(year_of_entry + 5))
+
+# Filter the data to include only the desired years
+df_filtered_UK <- df_long_UK %>%
+  filter(Year %in% years_to_display)
+
+# Create the line graph
+ggplot(df_filtered_UK, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 0.7) +  # Decreased line size
+  labs(title = "UK Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1), 
+                     breaks = seq(-4, 3, by = 1), limits = c(-4, 3)) +  # Adjusted y-axis
+  scale_x_continuous(breaks = years_to_display) + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.box = "horizontal",
+        legend.direction = "horizontal",
+        legend.key.width = unit(1, "cm"),
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(1, 1, 1, 2, "cm")) + 
+  guides(color = guide_legend(nrow = 2)) +
+  
+  # Add vertical line for EEC entry (now black)
+  geom_vline(xintercept = year_of_entry, linetype = "dashed", color = "black") +
+  annotate("text", x = year_of_entry + 0.2, y = -3,  # Moved label closer to the line
+           label = "EEC Entry", angle = 90, vjust = 1, hjust = 0, color = "black")  # Label is now black
+
+```
+
+## 3.7 Event Analysis: Brexit
+
+```{r}
+
+# Determine the range of years to display
+year_of_brexit <- 2020  # Year of Brexit
+years_to_display <- c((year_of_brexit - 3):(year_of_brexit + 3))  # 3 years pre and post
+
+# Filter the data to include only the desired years
+df_filtered_UK <- df_long_UK %>%
+  filter(Year %in% years_to_display)
+
+# Create the line graph
+ggplot(df_filtered_UK, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 0.7) +  # Decreased line size
+  labs(title = "UK Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1), 
+                     breaks = seq(-5, 1, by = 1), limits = c(-5, 1)) +  # Adjusted y-axis
+  scale_x_continuous(breaks = years_to_display) + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.box = "horizontal",
+        legend.direction = "horizontal",
+        legend.key.width = unit(1, "cm"),
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(1, 1, 1, 2, "cm")) + 
+  guides(color = guide_legend(nrow = 2)) +
+  
+  # Add vertical line for Brexit (black)
+  geom_vline(xintercept = year_of_brexit, linetype = "dashed", color = "black") +
+  annotate("text", x = year_of_brexit + 0.2, y = -3,  # Moved label closer to the line
+           label = "Brexit", angle = 90, vjust = 1, hjust = 0, color = "black")  # Label is now black
+
+
+
+```
+
+## 3.7b Brexit take 2
+
+```{r}
+
+# Determine the range of years to display
+year_of_brexit <- 2020  # Year of Brexit
+years_to_display <- c((year_of_brexit - 3):(year_of_brexit + 3))  # 3 years pre and post
+
+# Filter the data to include only the desired years
+df_filtered_UK <- df_long_UK %>%
+  filter(Year %in% years_to_display)
+
+# Create the line graph
+ggplot(df_filtered_UK, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 0.7) +  # Decreased line size
+  labs(title = "UK Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1), 
+                     breaks = seq(-4, 3, by = 1), limits = c(-4, 3)) +  # Adjusted y-axis
+  scale_x_continuous(breaks = years_to_display) + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.box = "horizontal",
+        legend.direction = "horizontal",
+        legend.key.width = unit(1, "cm"),
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(1, 1, 1, 2, "cm")) + 
+  guides(color = guide_legend(nrow = 2)) +
+  
+  # Add vertical line for Brexit (black)
+  geom_vline(xintercept = year_of_brexit, linetype = "dashed", color = "black") +
+  annotate("text", x = year_of_brexit + 0.2, y = -3,  # Moved label closer to the line
+           label = "Brexit", angle = 90, vjust = 1, hjust = 0, color = "black") +  # Label is now black
+  
+  # Highlight the 0% line
+  geom_hline(yintercept = 0, linetype = "dotted", color = "gray50")
+
+
+```
+
+## 3.8 Event Analysis: USA in the Nixon Shock
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`,
+         `Income Balance_pct`,
+         `Current Account Balance_pct`,
+         `Capital Account Balance_pct`,
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  filter(Year >= 1960 & Year <= 1980) # Filter for years between 1960 and 1980
+
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "US Balance of Payments (% of GDP), 1960-1980", # Updated title
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1960, 1980, by = 5)) +  # Adjusted x-axis breaks 
+  theme_minimal() +
+  theme(legend.position = "right", 
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank()) +
+  geom_vline(xintercept = 1971, linetype="dashed", color = "black") + # Add vertical line
+  annotate("text", x = 1971.5, y = max(df_long$Percentage * 100), label = "Nixon Shock", hjust = 0, color = "black") # Add label
+
+```
+
+## 3.9 Nixon Shock 2
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`,
+         `Income Balance_pct`,
+         `Current Account Balance_pct`,
+         `Capital Account Balance_pct`,
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%
+  filter(Year >= 1960 & Year <= 1980) # Filter for years between 1960 and 1980
+
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "US Balance of Payments (% of GDP), 1960-1980", # Updated title
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1960, 1980, by = 5)) +  # Adjusted x-axis breaks 
+  theme_minimal() +
+  theme(legend.position = "bottom", # Legend position at the bottom
+        legend.box = "horizontal", # Arrange legend items horizontally
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank()) +
+  guides(color = guide_legend(nrow = 2)) + # Split legend into two rows
+  geom_vline(xintercept = 1971, linetype="dashed", color = "black") + # Add vertical line
+  annotate("text", x = 1971.5, y = max(df_long$Percentage * 100), label = "Nixon Shock", hjust = 0, color = "black") # Add label
+
+```
+
+## 3.8c Nixon Shock 3
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year, 
+         `Trade Balance_pct`,
+         `Income Balance_pct`,
+         `Current Account Balance_pct`,
+         `Capital Account Balance_pct`,
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%  # Remove "_pct"
+  mutate(Balance = str_remove(Balance, " Balance")) %>% # Remove " Balance"
+  filter(Year >= 1960 & Year <= 1980) # Filter for years between 1960 and 1980
+
+
+# Create the line graph
+ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  labs(title = "US Balance of Payments (% of GDP), 1960-1980", # Updated title
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1960, 1980, by = 5)) +  # Adjusted x-axis breaks 
+  theme_minimal() +
+  theme(legend.position = "bottom", # Legend position at the bottom
+        legend.box = "horizontal", # Arrange legend items horizontally
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank()) +
+  guides(color = guide_legend(nrow = 2)) + # Split legend into two rows
+  geom_vline(xintercept = 1971, linetype="dashed", color = "black") + # Add vertical line
+  annotate("text", x = 1971.5, y = max(df_long$Percentage * 100), label = "Nixon Shock", hjust = 0, color = "black") # Add label
+
+```
+
+## 3.8d
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year, 
+         `Current Account Balance_pct`,
+         `Capital Account Balance_pct`,
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%  # Remove "_pct"
+  mutate(Balance = str_remove(Balance, " Balance")) %>% # Remove " Balance"
+  filter(Year >= 1960 & Year <= 1980) # Filter for years between 1960 and 1980
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1.2) +  # Slightly thicker lines
+  labs(title = "US Balance of Payments (% of GDP), 1960-1980", # Updated title
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1),
+                     breaks = seq(3, -3, by = -1),  # Adjusted y-axis breaks
+                     limits = c(-3, 3)) +         # Adjusted y-axis limits
+  scale_x_continuous(breaks = seq(1960, 1980, by = 5)) +  # Adjusted x-axis breaks 
+  theme_minimal() +
+  theme(legend.position = "bottom", # Legend position at the bottom
+        legend.box = "horizontal", # Arrange legend items horizontally
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 16),  # Increased overall text size
+        axis.text = element_text(size = 14)) +  # Increased axis text size
+  guides(color = guide_legend(nrow = 2)) + # Split legend into two rows
+  geom_vline(xintercept = 1971, linetype="dashed", color = "black") + # Add vertical line
+  annotate("text", x = 1971.5, y = 2.5, label = "Nixon Shock", hjust = 0, color = "black", size = 4.5) + # Add label with increased size
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black")  # Add dotted line at zero
+
+# Save the plot as a PNG file
+ggsave("us_balance_of_payments_1960_1980_nixon.png", plot, device = "png", width = 8, height = 5)
+
+```
+
+## 3.8e
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,
+         `Current Account Balance_pct`,
+         `Capital Account Balance_pct`,
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account Balance_pct` = `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>% # Create "Old Capital Account Balance"
+  select(-`Capital Account Balance_pct`, -`Financial Account Balance_pct`) %>% # Remove individual capital and financial accounts
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%  # Remove "_pct"
+  filter(Year >= 1960 & Year <= 1980) # Filter for years between 1960 and 1980
+
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1.2) +  # Slightly thicker lines
+  labs(title = "US Balance of Payments (% of GDP), 1960-1980", # Updated title
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1),
+                     breaks = seq(3, -3, by = -1),  # Adjusted y-axis breaks
+                     limits = c(-3, 3)) +         # Adjusted y-axis limits
+  scale_x_continuous(breaks = seq(1960, 1980, by = 5)) +  # Adjusted x-axis breaks 
+  theme_minimal() +
+  theme(legend.position = "bottom", # Legend position at the bottom
+        legend.box = "horizontal", # Arrange legend items horizontally
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 16),  # Increased overall text size
+        axis.text = element_text(size = 14)) +  # Increased axis text size
+  guides(color = guide_legend(nrow = 1)) + # Legend in one row
+  geom_vline(xintercept = 1971, linetype="dashed", color = "black") + # Add vertical line
+  annotate("text", x = 1971.5, y = 2.5, label = "Nixon Shock", hjust = 0, color = "black", size = 4.5) + # Add label with increased size
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black")  # Add dotted line at zero
+
+# Save the plot as a PNG file
+ggsave("us_balance_of_payments_1960_1980_nixon2.png", plot, device = "png", width = 8, height = 5)
+
+
+```
+
+## 3.8f
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,
+         `Current Account Balance_pct`,
+         `Capital Account Balance_pct`,
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account Balance_pct` = `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>% # Create "Old Capital Account Balance"
+  select(-`Capital Account Balance_pct`, -`Financial Account Balance_pct`) %>% # Remove individual capital and financial accounts
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%  # Remove "_pct"
+  mutate(Balance = str_remove(Balance, " Balance")) %>% # Remove " Balance"
+  filter(Year >= 1960 & Year <= 1980) # Filter for years between 1960 and 1980
+
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1.2) +  # Slightly thicker lines
+  labs(
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1),
+                     breaks = seq(1.5, -1.5, by = -0.5),  # Updated y-axis breaks
+                     limits = c(-1.5, 1.5)) +         # Updated y-axis limits
+  scale_x_continuous(breaks = seq(1960, 1980, by = 5)) +  # Adjusted x-axis breaks 
+  theme_minimal() +
+  theme(legend.position = "bottom", # Legend position at the bottom
+        legend.box = "horizontal", # Arrange legend items horizontally
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 16),  # Increased overall text size
+        axis.text = element_text(size = 14)) +  # Increased axis text size
+  guides(color = guide_legend(nrow = 2)) + # Split legend into two rows
+  geom_vline(xintercept = 1971, linetype="dashed", color = "black") + # Add vertical line
+  annotate("text", x = 1971.5, y = 1, label = "Nixon Shock", hjust = 0, color = "black", size = 6) + # Add label with increased size
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black")  # Add dotted line at zero
+
+# Save the plot as a PNG file
+ggsave("us_balance_of_payments_1960_1980_nixon3.png", plot, device = "png", width = 8, height = 4)
+
+```
+
+## 3.8g trade income
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,
+         `Trade Balance_pct`,
+         `Income Balance_pct`) %>%
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%  # Remove "_pct"
+  mutate(Balance = str_remove(Balance, " Balance")) %>% # Remove " Balance"
+  filter(Year >= 1960 & Year <= 1980) # Filter for years between 1960 and 1980
+
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1.2) +  # Slightly thicker lines
+  labs(
+    x = "Year",
+    y = "Percentage of GDP",
+    color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1),
+                     breaks = seq(1.5, -1.5, by = -0.5),  # Updated y-axis breaks
+                     limits = c(-2, 2)) +         # Updated y-axis limits
+  scale_x_continuous(breaks = seq(1960, 1980, by = 5)) +  # Adjusted x-axis breaks 
+  theme_minimal() +
+  theme(legend.position = "bottom", # Legend position at the bottom
+        legend.box = "horizontal", # Arrange legend items horizontally
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 16),  # Increased overall text size
+        axis.text = element_text(size = 14)) +  # Increased axis text size
+  guides(color = guide_legend(nrow = 1)) + # Legend in one row 
+  geom_vline(xintercept = 1971, linetype="dashed", color = "black") + # Add vertical line
+  annotate("text", x = 1971.5, y = 1.75, label = "Nixon Shock", hjust = 0, color = "black", size = 6) + # Add label with increased size
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black")  # Add dotted line at zero
+
+# Save the plot as a PNG file
+ggsave("us_balance_of_payments_1960_1980_nixon4trade.png", plot, device = "png", width = 8, height = 4)
+
+```
+
+
+
+
+### Some Explanation
+
+This graph shows the US balance of payments as a percentage of GDP from 1960 to 1980, with a particular focus on the period surrounding the Nixon Shock of 1971. Here's an interpretation:
+
+Key Observations:
+Current Account: The current account balance, which includes trade in goods and services as well as income flows, generally declined leading up to the Nixon Shock. After 1971, it fluctuated significantly, with periods of both surplus and deficit.
+
+Capital and Financial Accounts: These accounts, reflecting investment flows, show a more volatile pattern. There's a notable surge in the financial account balance after the Nixon Shock.
+
+Overall Impact: While the graph doesn't show a single, dramatic shift immediately after 1971, it does reveal increased volatility in several components of the balance of payments following the Nixon Shock.
+
+How the Nixon Shock Might Have Affected the Balance of Payments:
+
+The Nixon Shock involved several key policy changes:
+Closing the "gold window": The US dollar was no longer convertible to gold, effectively ending the Bretton Woods system of fixed exchange rates.
+90-day wage and price freeze: This aimed to curb inflation.
+Import surcharge: A 10% surcharge was imposed on imports to make them more expensive and protect domestic industries.
+
+These policies could have affected the balance of payments in several ways:
+
+Dollar Devaluation: Ending the gold standard led to a devaluation of the dollar. This could have made US exports cheaper and imports more expensive, potentially improving the trade balance (though this is not clearly reflected in the graph).
+
+Increased Uncertainty: The sudden policy shifts likely created uncertainty in international markets. This could have led to volatile capital flows, as seen in the graph, with investors potentially moving funds in and out of the US based on changing expectations.
+
+Inflation and Competitiveness: While intended to curb inflation, the policies may have ultimately contributed to higher inflation in the long run. This could have harmed US competitiveness and affected the trade balance.
+
+Does the Graph Support This?
+
+The graph provides some support for these interpretations:
+
+Volatility: The increased volatility in the capital and financial accounts after 1971 is consistent with the idea of increased uncertainty in international markets.
+No Clear Improvement in Trade Balance: While a cheaper dollar might have been expected to improve the trade balance, the graph doesn't show a consistent improvement in the goods and services balance after 1971. This suggests other factors, such as global economic conditions and the inflationary impact of the policies, may have offset any potential gains.
+Important Considerations:
+
+Other Factors: The graph only shows a limited time period. Other factors, such as the oil crises of the 1970s, also significantly impacted the US economy and its balance of payments during this era.
+Complexity: The balance of payments is a complex system with many interacting components. It's difficult to isolate the specific impact of the Nixon Shock from other factors at play.
+In Conclusion:
+
+The graph suggests that the Nixon Shock contributed to increased volatility in the US balance of payments, particularly in capital flows. While the expected improvement in the trade balance due to dollar devaluation is not clearly evident, the graph provides a snapshot of a turbulent period in US economic history. Further analysis and consideration of other economic factors are needed to fully understand the long-term consequences of the Nixon Shock on the US balance of payments.
+
+## 3.10 Event Analysis: Three Countries during the GFC
+
+```{r}
+
+library(ggplot2)
+
+# Assuming your combined data frame is named 'data_annual_pct'
+
+# Create the plot
+ggplot(data_annual_pct, aes(x = Year)) +
+  geom_line(aes(y = `Financial Account Balance_pct`, color = Country), linetype = "solid") +
+  geom_line(aes(y = `Current Account Balance_pct`, color = Country), linetype = "dashed") +
+  labs(
+    title = "Financial Account and Current Account Balances (% of GDP)",
+    x = "Year",
+    y = "% of GDP",
+    color = "Country"
+  ) +
+  theme_minimal()
+
+```
+
+## 3.10b Three Countries GFC 2
+
+```{r}
+
+library(ggplot2)
+library(scales) # For percent formatting
+
+# Assuming your combined data frame is named 'data_annual_pct'
+
+# Create the plot
+ggplot(data_annual_pct, aes(x = Year)) +
+  geom_line(aes(y = `Financial Account Balance_pct`, color = paste(Country, "- Financial Account")), linetype = "solid") +
+  geom_line(aes(y = `Current Account Balance_pct`, color = paste(Country, "- Current Account")), linetype = "dashed") +
+  labs(
+    title = "Financial Account and Current Account Balances (% of GDP)",
+    x = "Year",
+    y = "% of GDP",
+    color = "Country" 
+  ) +
+  scale_y_continuous(
+    labels = percent_format(scale = 1),  # Format y-axis labels as percentages
+    limits = c(-0.08, 0.10),             # Set y-axis limits
+    breaks = seq(-0.08, 0.10, 0.02)     # Set y-axis breaks
+  ) +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black") + # Add a horizontal line at y = 0
+  theme_minimal()
+
+
+```
+
+## 3.10c Three Countries GFC 
+
+```{r}
+
+library(ggplot2)
+library(scales) # For percent formatting
+
+# Assuming your combined data frame is named 'data_annual_pct'
+
+# Create the plot
+ggplot(data_annual_pct, aes(x = Year)) +
+  geom_line(aes(y = `Financial Account Balance_pct` * 100, color = paste(Country, "- Financial Account")), linetype = "solid") +
+  geom_line(aes(y = `Current Account Balance_pct` * 100, color = paste(Country, "- Current Account")), linetype = "dashed") +
+  labs(
+    title = "Financial Account and Current Account Balances (% of GDP)",
+    x = "Year",
+    y = "% of GDP",
+    color = "Country - Balance"  # Updated legend title
+  ) +
+  scale_y_continuous(
+    labels = percent_format(scale = 1),  # Format y-axis labels as percentages
+    limits = c(-8, 10),             # Set y-axis limits (adjusted for multiplied values)
+    breaks = seq(-8, 10, 2)          # Set y-axis breaks (adjusted for multiplied values)
+  ) +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black") + # Add a horizontal line at y = 0
+  theme_minimal()
+
+```
+
+## 3.10d Three Countries GFC
+
+```{r}
+
+library(ggplot2)
+library(scales) # For percent formatting
+library(dplyr)   # For filtering data
+
+# Assuming your combined data frame is named 'data_annual_pct'
+
+# Filter the data for the years 1980 to 2023
+filtered_data <- data_annual_pct %>%
+  filter(Year >= 1980 & Year <= 2023)
+
+# Create the plot using the filtered data
+ggplot(filtered_data, aes(x = Year)) +
+  geom_line(aes(y = `Financial Account Balance_pct` * 100, color = paste(Country, "- Financial Account")), linetype = "solid") +
+  geom_line(aes(y = `Current Account Balance_pct` * 100, color = paste(Country, "- Current Account")), linetype = "dashed") +
+  labs(
+    title = "Financial Account and Current Account Balances (% of GDP)",
+    x = "Year",
+    y = "% of GDP",
+    color = "Country - Balance"  # Updated legend title
+  ) +
+  scale_y_continuous(
+    labels = percent_format(scale = 1),  # Format y-axis labels as percentages
+    limits = c(-8, 10),             # Set y-axis limits (adjusted for multiplied values)
+    breaks = seq(-8, 10, 2)          # Set y-axis breaks (adjusted for multiplied values)
+  ) +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black") + # Add a horizontal line at y = 0
+  theme_minimal()
+
+```
+
+## 3.10e Three countries gfc blown up
+
+```{r}
+
+library(ggplot2)
+library(scales) # For percent formatting
+library(dplyr)   # For filtering data
+
+# Assuming your combined data frame is named 'data_annual_pct'
+
+# Filter the data for the years 1980 to 2023
+filtered_data <- data_annual_pct %>%
+  filter(Year >= 1980 & Year <= 2023)
+
+# Create the plot using the filtered data with higher resolution
+ggplot(filtered_data, aes(x = Year)) +
+  geom_line(aes(y = `Financial Account Balance_pct` * 100, color = paste(Country, "- Financial Account")), 
+            linetype = "solid", size = 1.2) +  # Increased line thickness
+  geom_line(aes(y = `Current Account Balance_pct` * 100, color = paste(Country, "- Current Account")), 
+            linetype = "dashed", size = 1.2) +  # Increased line thickness
+  labs(
+    title = "Financial Account and Current Account Balances (% of GDP)",
+    x = "Year",
+    y = "% of GDP",
+    color = "Country - Balance"  # Updated legend title
+  ) +
+  scale_y_continuous(
+    labels = percent_format(scale = 1),  # Format y-axis labels as percentages
+    limits = c(-8, 10),             # Set y-axis limits (adjusted for multiplied values)
+    breaks = seq(-8, 10, 2)          # Set y-axis breaks (adjusted for multiplied values)
+  ) +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", size = 1) + # Increased line thickness
+  theme_minimal(base_size = 16) +  # Increased font size
+  theme(
+    plot.title = element_text(size = 20),  # Increased title font size
+    axis.text = element_text(size = 14),    # Increased axis label font size
+    legend.text = element_text(size = 14)   # Increased legend font size
+  )
+
+# Save the plot with higher resolution
+ggsave("financial_account_current_account_balances.png", 
+       width = 12, height = 8, dpi = 300)
+
+
+```
+
+## 3.11 Two Countries GFC - GER AND USA
+
+```{r}
+
+library(ggplot2)
+library(scales) # For percent formatting
+library(dplyr) # For filtering data
+
+# Assuming your combined data frame is named 'data_annual_pct'
+
+# Filter the data for the years 1980 to 2023 and countries Germany and USA
+filtered_data <- data_annual_pct %>%
+  filter(Year >= 1980 &
+           Year <= 2023, Country %in% c("GER", "US"))
+
+# Create the plot using the filtered data with higher resolution
+ggplot(filtered_data, aes(x = Year)) +
+  geom_line(
+    aes(
+      y = `Financial Account Balance_pct` * 100,
+      color = paste(Country, "- Financial Account")
+    ),
+    linetype = "solid",
+    size = 1.2
+  ) + # Increased line thickness
+  geom_line(
+    aes(
+      y = `Current Account Balance_pct` * 100,
+      color = paste(Country, "- Current Account")
+    ),
+    linetype = "dashed",
+    size = 1.2
+  ) + # Increased line thickness
+  labs(
+    title = "Financial Account and Current Account Balances (% of GDP) - Germany & USA",
+    # Modified title
+    x = "Year",
+    y = "% of GDP",
+    color = "Country - Balance" # Updated legend title
+  ) +
+  scale_y_continuous(
+    labels = percent_format(scale = 1),
+    # Format y-axis labels as percentages
+    limits = c(-8, 10),
+    # Set y-axis limits (adjusted for multiplied values)
+    breaks = seq(-8, 10, 2) # Set y-axis breaks (adjusted for multiplied values)
+  ) +
+  geom_hline(
+    yintercept = 0,
+    linetype = "solid",
+    color = "black",
+    size = 1
+  ) + # Increased line thickness
+  theme_minimal(base_size = 16) + # Increased font size
+  theme(
+    plot.title = element_text(size = 20),
+    # Increased title font size
+    axis.text = element_text(size = 14),
+    # Increased axis label font size
+    legend.text = element_text(size = 14) # Increased legend font size
+  )
+
+# Save the plot with higher resolution
+ggsave(
+  "financial_account_current_account_balances_germany_usa.png",
+  # Modified filename
+  width = 12,
+  height = 8,
+  dpi = 300
+)
+
+```
+
+## 3.12b Two Countries GFC - GER AND USA
+
+```{r}
+
+
+
+```
+
+## 3.13 New capital Account as percent of old capital account
+
+## 3.14 German cap accts
+
+```{r}
+
+# Select the relevant columns, calculate "Old Capital Account Balance", and convert to long format
+df_long <- GERdata_annual_pct %>% 
+  select(Year,
+         `Current Account Balance_pct`,
+         `Capital Account Balance_pct`,
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account Balance_pct` = `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>% 
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))
+
+# Create the line graph and assign it to a variable
+my_plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") + 
+  labs(title = "German Balance of Payments (% of GDP)",
+       x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1960, 2020, by = 10)) + 
+  scale_color_manual(values = c("Current Account Balance" = "darkgreen",
+                                "Capital Account Balance" = "red", 
+                                "Financial Account Balance" = "cyan",
+                                "Old Capital Account Balance" = "purple"),
+                     labels = c("Current Account", "Capital Account", "Financial Account", "Old Capital Account"),
+                     breaks = c("Current Account Balance", "Capital Account Balance", "Financial Account Balance", "Old Capital Account Balance")) + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        legend.box = "vertical",
+        text = element_text(size = 14), 
+        axis.title = element_text(size = 16),
+        legend.text = element_text(size = 12), 
+        legend.title = element_text(size = 14)) + 
+  guides(color = guide_legend(ncol = 2))
+
+
+# Export the plot to a PNG file with adjusted height
+ggsave("german_balance_of_payments1.png", my_plot, width = 8, height = 4, dpi = 300)
+
+
+```
+
+## 3.14b 2
+
+```{r}
+
+# Select the relevant columns, calculate "Old Capital Account Balance", and convert to long format
+df_long <- GERdata_annual_pct %>% 
+  select(Year,
+         `Current Account Balance_pct`,
+         `Capital Account Balance_pct`,
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account Balance_pct` = `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>% 
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct"))
+
+# Create the line graph and assign it to a variable
+my_plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1) +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") + 
+  labs(x = "Year",
+       y = "Percentage of GDP",
+       color = "Balance as % of GDP") +  # Removed title here
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(1960, 2020, by = 10)) + 
+  scale_color_manual(values = c("Current Account Balance" = "darkgreen",
+                                "Capital Account Balance" = "red", 
+                                "Financial Account Balance" = "cyan",
+                                "Old Capital Account Balance" = "purple"),
+                     labels = c("Current Account", "Capital Account", "Financial Account", "Old Capital Account"),
+                     breaks = c("Current Account Balance", "Capital Account Balance", "Financial Account Balance", "Old Capital Account Balance")) + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        legend.box = "vertical",
+        text = element_text(size = 14), 
+        axis.title = element_text(size = 16),
+        legend.text = element_text(size = 12), 
+        legend.title = element_text(size = 14)) + 
+  guides(color = guide_legend(ncol = 2))
+
+
+# Export the plot to a PNG file with adjusted height
+ggsave("german_balance_of_payments1.png", my_plot, width = 8, height = 4, dpi = 300)
+
+```
+
+## 3.15 NAFTA
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,
+         `Trade Balance_pct`,
+         `Income Balance_pct`) %>%
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%  # Remove "_pct"
+  mutate(Balance = str_remove(Balance, " Balance")) %>% # Remove " Balance"
+  filter(Year >= 1985 & Year <= 2015) # Filter for years between 1985 and 2015 
+
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1.2) +  # Slightly thicker lines
+  labs(
+    x = "Year",
+    y = "Percentage of GDP",
+    color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1),
+                     breaks = seq(2, -8, by = -0.5),  # Updated y-axis breaks
+                     limits = c(-8, 2)) +         # Updated y-axis limits
+  scale_x_continuous(breaks = seq(1985, 2015, by = 5)) +  # Adjusted x-axis breaks 
+  theme_minimal() +
+  theme(legend.position = "bottom", # Legend position at the bottom
+        legend.box = "horizontal", # Arrange legend items horizontally
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 16),  # Increased overall text size
+        axis.text = element_text(size = 14)) +  # Increased axis text size
+  guides(color = guide_legend(nrow = 1)) + # Legend in one row 
+  geom_vline(xintercept = 1985, linetype="dashed", color = "black") + # Add vertical line for 1985
+  annotate("text", x = 1985.5, y = 1.75, label = "Plaza Accord", hjust = 0, color = "black", size = 6) + # Add label with increased size
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black")  # Add dotted line at zero
+
+# Save the plot as a PNG file
+ggsave("us_balance_of_payments_1985_2015_nafta1trade.png", plot, device = "png", width = 8, height = 5)
+
+```
+
+## 3.15b
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Select the relevant columns and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,
+         `Trade Balance_pct`,
+         `Income Balance_pct`) %>%
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%  # Remove "_pct"
+  mutate(Balance = str_remove(Balance, " Balance")) %>% # Remove " Balance"
+  filter(Year >= 1985 & Year <= 2015) # Filter for years between 1985 and 2015 
+
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1.2) +  # Slightly thicker lines
+  labs(
+    x = "Year",
+    y = "Percentage of GDP",
+    color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1),
+                     breaks = seq(1, -6, by = -1),  # Updated y-axis breaks
+                     limits = c(-6, 1)) +         # Updated y-axis limits
+  scale_x_continuous(breaks = seq(1985, 2015, by = 5)) +  # Adjusted x-axis breaks 
+  theme_minimal() +
+  theme(legend.position = "bottom", # Legend position at the bottom
+        legend.box = "horizontal", # Arrange legend items horizontally
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 16),  # Increased overall text size
+        axis.text = element_text(size = 14)) +  # Increased axis text size
+  guides(color = guide_legend(nrow = 1)) + # Legend in one row 
+  geom_vline(xintercept = 1985, linetype="dashed", color = "black") + # Add vertical line for 1985
+  annotate("text", x = 1985.5, y = 1, label = "Plaza Accord", hjust = 0, color = "black", size = 6) + # Add label with increased size, adjusted y-position
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black")  # Add dotted line at zero
+
+# Save the plot as a PNG file
+ggsave("us_balance_of_payments_1985_2015_nafta2trade.png", plot, device = "png", width = 8, height = 5)
+
+
+```
+
+## 3.15c
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Key dates
+nafta_year <- 1994  # Year NAFTA took effect
+wto_china_year <- 2001  # Year China joined the WTO
+
+# Select the relevant columns and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,
+         `Trade Balance_pct`,
+         `Income Balance_pct`) %>%
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%  # Remove "_pct"
+  mutate(Balance = str_remove(Balance, " Balance")) %>% # Remove " Balance"
+  filter(Year >= 1985 & Year <= 2015) # Filter for years between 1985 and 2015 
+
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1.2) +  # Slightly thicker lines
+  labs(
+    x = "Year",
+    y = "Percentage of GDP",
+    color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1),
+                     breaks = seq(1, -6, by = -1),  # Updated y-axis breaks
+                     limits = c(-6, 1)) +         # Updated y-axis limits
+  scale_x_continuous(breaks = seq(1985, 2015, by = 5)) +  # Adjusted x-axis breaks 
+  theme_minimal() +
+  theme(legend.position = "bottom", # Legend position at the bottom
+        legend.box = "horizontal", # Arrange legend items horizontally
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 16),  # Increased overall text size
+        axis.text = element_text(size = 14)) +  # Increased axis text size
+  guides(color = guide_legend(nrow = 1)) + # Legend in one row 
+  # Vertical lines and annotations for NAFTA and WTO
+  geom_vline(xintercept = nafta_year, linetype="dashed", color = "black") + 
+  annotate("text", x = nafta_year + 0.5, y = .5, label = "NAFTA", hjust = 0, color = "black", size = 6) +
+  geom_vline(xintercept = wto_china_year, linetype="dashed", color = "black") +
+  annotate("text", x = wto_china_year + 0.5, y = .5, label = "China joins WTO", hjust = 0, color = "black", size = 6) +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black")  # Add dotted line at zero
+
+# Save the plot as a PNG file
+ggsave("us_balance_of_payments_1985_2015_nafta3.png", plot, device = "png", width = 8, height = 5)
+
+```
+
+## 3.15d NON TRADE
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Key dates
+nafta_year <- 1994  # Year NAFTA took effect
+wto_china_year <- 2001  # Year China joined the WTO
+
+# Select the relevant columns and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,
+         `Current Account Balance_pct`,
+         `Capital Account Balance_pct`,
+         `Financial Account Balance_pct`) %>%
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%  # Remove "_pct"
+  mutate(Balance = str_remove(Balance, " Balance")) %>% # Remove " Balance"
+  filter(Year >= 1985 & Year <= 2015) # Filter for years between 1985 and 2015 
+
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1.2) +  # Slightly thicker lines
+  labs(
+    x = "Year",
+    y = "Percentage of GDP",
+    color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1),
+                     breaks = seq(1, -6, by = -1),  # Updated y-axis breaks
+                     limits = c(-6, 1)) +         # Updated y-axis limits
+  scale_x_continuous(breaks = seq(1985, 2015, by = 5)) +  # Adjusted x-axis breaks 
+  theme_minimal() +
+  theme(legend.position = "bottom", # Legend position at the bottom
+        legend.box = "horizontal", # Arrange legend items horizontally
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 16),  # Increased overall text size
+        axis.text = element_text(size = 14)) +  # Increased axis text size
+  guides(color = guide_legend(nrow = 2)) + # Split legend into two rows
+  # Vertical lines and annotations for NAFTA and WTO
+  geom_vline(xintercept = nafta_year, linetype="dashed", color = "black") + 
+  annotate("text", x = nafta_year + 0.5, y = 1, label = "NAFTA", hjust = 0, color = "black", size = 6) +
+  geom_vline(xintercept = wto_china_year, linetype="dashed", color = "black") +
+  annotate("text", x = wto_china_year + 0.5, y = 1, label = "China WTO", hjust = 0, color = "black", size = 6) +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black")  # Add dotted line at zero
+
+# Save the plot as a PNG file
+ggsave("us_balance_of_payments_1985_2015_nafta4.png", plot, device = "png", width = 8, height = 5)
+
+
+```
+
+## 3.15d
+
+```{r}
+
+library(ggplot2)
+library(tidyr)
+library(scales)
+library(stringr)
+
+# Key dates
+nafta_year <- 1994  # Year NAFTA took effect
+wto_china_year <- 2001  # Year China joined the WTO
+
+# Select the relevant columns and convert to long format
+df_long <- USdata_annual_pct %>%
+  select(Year,
+         `Current Account Balance_pct`,
+         `Capital Account Balance_pct`,
+         `Financial Account Balance_pct`) %>%
+  mutate(`Old Capital Account Balance_pct` = `Capital Account Balance_pct` + `Financial Account Balance_pct`) %>% # Create "Old Capital Account Balance"
+  select(-`Capital Account Balance_pct`, -`Financial Account Balance_pct`) %>% # Remove individual capital and financial accounts
+  pivot_longer(cols = -Year,
+               names_to = "Balance",
+               values_to = "Percentage") %>%
+  mutate(Balance = str_remove(Balance, "_pct")) %>%  # Remove "_pct"
+  mutate(Balance = str_remove(Balance, " Balance")) %>% # Remove " Balance"
+  filter(Year >= 1985 & Year <= 2015) # Filter for years between 1985 and 2015 
+
+
+# Create the line graph
+plot <- ggplot(df_long, aes(x = Year, y = Percentage * 100, color = Balance)) +
+  geom_line(size = 1.2) +  # Slightly thicker lines
+  labs(
+    x = "Year",
+    y = "Percentage of GDP",
+    color = "Balance as % of GDP") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1),
+                     breaks = seq(1, -6, by = -1),  # Updated y-axis breaks
+                     limits = c(-6, 1)) +         # Updated y-axis limits
+  scale_x_continuous(breaks = seq(1985, 2015, by = 5)) +  # Adjusted x-axis breaks 
+  theme_minimal() +
+  theme(legend.position = "bottom", # Legend position at the bottom
+        legend.box = "horizontal", # Arrange legend items horizontally
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 16),  # Increased overall text size
+        axis.text = element_text(size = 14)) +  # Increased axis text size
+  guides(color = guide_legend(nrow = 2)) + # Split legend into two rows
+  # Vertical lines and annotations for NAFTA and WTO
+  geom_vline(xintercept = nafta_year, linetype="dashed", color = "black") + 
+  annotate("text", x = nafta_year + 0.5, y = 1, label = "NAFTA", hjust = 0, color = "black", size = 6) +
+  geom_vline(xintercept = wto_china_year, linetype="dashed", color = "black") +
+  annotate("text", x = wto_china_year + 0.5, y = 1, label = "China WTO", hjust = 0, color = "black", size = 6) +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black")  # Add dotted line at zero
+
+# Save the plot as a PNG file
+ggsave("us_balance_of_payments_1985_2015_nafta5.png", plot, device = "png", width = 8, height = 5)
+
+```
+
+

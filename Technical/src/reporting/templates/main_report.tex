@@ -1,0 +1,71 @@
+
+\documentclass[11pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{toc}
+
+% Geometry settings
+\geometry{
+    left=2.5cm,
+    right=2.5cm,
+    top=2.5cm,
+    bottom=2.5cm
+}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+    pdftitle={{{ title }}},
+    pdfauthor={{{ author }}},
+    pdfsubject={International Economics Analysis}
+}
+
+% Fancy headers
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Lewis International Economics Platform}
+\lhead{{{ analysis_type }} Analysis}
+\rfoot{\thepage}
+
+\title{\textbf{{{ title }}}}
+\author{{{ author }}}
+\date{{{ date_range }}}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Executive Summary}
+{{ executive_summary }}
+
+\section{Introduction}
+{{ introduction }}
+
+\section{Methodology}
+{{ methodology }}
+
+\section{Analysis Results}
+{{ analysis_results }}
+
+\section{Key Findings}
+{{ key_findings }}
+
+\section{Recommendations}
+{{ recommendations }}
+
+\section{Conclusion}
+{{ conclusion }}
+
+\end{document}

@@ -1,0 +1,44 @@
+{
+  "styles": {
+    "header": {
+      "font_name": "Arial",
+      "font_size": 12,
+      "bold": true,
+      "bg_color": "#4F81BD",
+      "font_color": "white"
+    },
+    "title": {
+      "font_name": "Arial",
+      "font_size": 14,
+      "bold": true,
+      "bg_color": "#1F497D",
+      "font_color": "white"
+    },
+    "data": {
+      "font_name": "Arial",
+      "font_size": 10
+    },
+    "currency": {
+      "num_format": "$#,##0",
+      "font_name": "Arial",
+      "font_size": 10
+    },
+    "percentage": {
+      "num_format": "0.00%",
+      "font_name": "Arial",
+      "font_size": 10
+    },
+    "highlight": {
+      "bg_color": "#FFC000",
+      "font_name": "Arial",
+      "font_size": 10
+    }
+  },
+  "column_widths": {
+    "A": 20,
+    "B": 15,
+    "C": 15,
+    "D": 15,
+    "E": 25
+  }
+}
