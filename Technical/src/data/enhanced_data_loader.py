@@ -60,7 +60,7 @@ class EnhancedDataLoader:
         self.census_path = self.data_root / "CENSUS"
         self.alpha_vantage_path = self.data_root / "ALPHA_VANTAGE"
 
-        # FRED data categories available in the source store
+        # FRED data categories available in the data store
         self.fred_categories = {
             'trade': 'fred_trade_20250929.csv',
             'interest_rates': 'fred_interest_rates_20250929.csv',
@@ -79,7 +79,7 @@ class EnhancedDataLoader:
             'business': 'fred_business_20250929.csv'
         }
 
-        # Auto-discover FRED data files in the source store
+        # Auto-discover FRED data files in the data store
         self._discover_fred_files()
 
         logger.info("Enhanced data source Loader initialized")
@@ -89,7 +89,7 @@ class EnhancedDataLoader:
     def load_fred_category(self, category: str, start_date: Optional[str] = None,
                           end_date: Optional[str] = None) -> pd.DataFrame:
         """
-        Load a specific FRED data category from the source store.
+        Load a specific FRED data category from the data store.
 
         Args:
             category: FRED category name (e.g., 'trade', 'interest_rates')
@@ -140,7 +140,7 @@ class EnhancedDataLoader:
     def load_all_fred_data(self, start_date: Optional[str] = None,
                           end_date: Optional[str] = None) -> Dict[str, pd.DataFrame]:
         """
-        Load all FRED categories from the source store.
+        Load all FRED categories from the data store.
 
         Args:
             start_date: Optional start date filter
@@ -149,7 +149,7 @@ class EnhancedDataLoader:
         Returns:
             Dictionary mapping category names to DataFrames
         """
-        logger.info("Loading all FRED categories from the source store...")
+        logger.info("Loading all FRED categories from the data store...")
 
         all_data = {}
         total_obs = 0
@@ -169,7 +169,7 @@ class EnhancedDataLoader:
     def load_alfred_vintages(self, series_id: Optional[str] = None,
                            categories: Optional[List[str]] = None) -> pd.DataFrame:
         """
-        Load ALFRED historical vintages from the source store.
+        Load ALFRED historical vintages from the data store.
 
         Args:
             series_id: Optional specific FRED series ID
@@ -180,7 +180,7 @@ class EnhancedDataLoader:
         """
         logger.info("Loading ALFRED historical vintages...")
 
-        # Available ALFRED files in the source store
+        # Available ALFRED files in the data store
         alfred_files = {
             'trade': 'alfred_trade_20251002_1344.csv',
             'gdp': 'alfred_gdp_20251002_1344.csv',
@@ -226,7 +226,7 @@ class EnhancedDataLoader:
 
     def load_census_data(self, data_type: str = 'timeseries') -> pd.DataFrame:
         """
-        Load Census demographic and economic data from the source store.
+        Load Census demographic and economic data from the data store.
 
         Args:
             data_type: Type of census data ('timeseries', 'demographics', 'business')
@@ -240,7 +240,7 @@ class EnhancedDataLoader:
         census_files = list(self.census_path.glob("**/*.csv"))
 
         if not census_files:
-            logger.warning("No Census CSV files found in the source store")
+            logger.warning("No Census CSV files found in the data store")
             return pd.DataFrame()
 
         dfs = []
@@ -265,7 +265,7 @@ class EnhancedDataLoader:
 
     def load_financial_markets(self) -> pd.DataFrame:
         """
-        Load financial market data from the source store (Alpha Vantage).
+        Load financial market data from the data store (Alpha Vantage).
 
         Returns:
             DataFrame with financial market data
@@ -276,7 +276,7 @@ class EnhancedDataLoader:
         av_files = list(self.alpha_vantage_path.glob("**/*.csv"))
 
         if not av_files:
-            logger.warning("No Alpha Vantage files found in the source store")
+            logger.warning("No Alpha Vantage files found in the data store")
             return pd.DataFrame()
 
         dfs = []
@@ -318,7 +318,7 @@ class EnhancedDataLoader:
         Returns:
             Unified DataFrame with multiple data sources
         """
-        logger.info("Creating unified dataset from the source store sources...")
+        logger.info("Creating unified dataset from the data store sources...")
 
         # Load key FRED categories
         key_categories = ['trade', 'gdp_growth', 'inflation', 'interest_rates', 'employment']
@@ -410,7 +410,7 @@ class EnhancedDataLoader:
 
     def export_to_lewis_output(self, data: pd.DataFrame,
                              filename: str,
-                             data_type: str = 'enhanced_robin') -> Path:
+                             data_type: str = 'enhanced_source') -> Path:
         """
         Export data to Lewis Output directory with proper naming.
 
@@ -439,7 +439,7 @@ class EnhancedDataLoader:
 
     def load_enhanced_international_data(self) -> Dict[str, pd.DataFrame]:
         """
-        Load enhanced international economics data from the source store sources.
+        Load enhanced international economics data from the data store sources.
 
         Returns:
             Dictionary with enhanced international data

@@ -129,7 +129,7 @@ class ClassFilesDataExtractor:
 
         # Save to appropriate data source directory
         if standardized is not None:
-            self._save_to_robin(standardized, file_info, bpm6_component)
+            self._save_to_source(standardized, file_info, bpm6_component)
 
         return standardized
 
@@ -299,7 +299,7 @@ class ClassFilesDataExtractor:
 
         return code
 
-    def _save_to_robin(self, df: pd.DataFrame, file_info: Dict, component: str):
+    def _save_to_source(self, df: pd.DataFrame, file_info: Dict, component: str):
         """Save extracted data to appropriate data source directory."""
         # Determine target directory based on component
         if component.startswith('financial_account_fdi'):

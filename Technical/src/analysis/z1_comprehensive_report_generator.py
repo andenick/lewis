@@ -88,16 +88,16 @@ class Z1ComprehensiveReportGenerator:
         logger.info(f"Z.1 Comprehensive Report Generator initialized")
         logger.info(f"Output directory: {self.output_dir}")
 
-    def generate_comprehensive_reports(self, use_robin_api: bool = True,
+    def generate_comprehensive_reports(self, use_source_api: bool = True,
                                      start_year: int = 1950,
                                      api_key: str = None) -> Dict[str, str]:
         """
         Generate comprehensive Z.1 analysis reports.
 
         Args:
-            use_robin_api: Whether to use FRED API integration
+            use_source_api: Whether to use FRED API integration
             start_year: Starting year for analysis
-            api_key: FRED API key (if not using the source store)
+            api_key: FRED API key (if not using the data store)
 
         Returns:
             Dictionary with paths to generated reports
@@ -109,12 +109,12 @@ class Z1ComprehensiveReportGenerator:
         try:
             # Initialize data collection
             logger.info("1. Initializing data collection...")
-            if use_robin_api:
+            if use_source_api:
                 data_config = Z1Config(
                     start_year=start_year,
                     include_bop=True,
                     validate_data=True,
-                    use_robin_api=True
+                    use_source_api=True
                 )
                 collector = FREDZ1Collector(data_config)
                 logger.info("   Using FRED API integration")
@@ -1220,7 +1220,7 @@ Data Reliability:
 
 # Main execution function
 def generate_comprehensive_z1_reports(output_dir: str = "output/z1_comprehensive_reports",
-                                      use_robin_api: bool = True,
+                                      use_source_api: bool = True,
                                       start_year: int = 1950,
                                       api_key: str = None) -> Dict[str, str]:
     """
@@ -1228,9 +1228,9 @@ def generate_comprehensive_z1_reports(output_dir: str = "output/z1_comprehensive
 
     Args:
         output_dir: Output directory for reports
-        use_robin_api: Whether to use FRED API integration
+        use_source_api: Whether to use FRED API integration
         start_year: Starting year for analysis
-        api_key: FRED API key (if not using the source store)
+        api_key: FRED API key (if not using the data store)
 
     Returns:
         Dictionary with paths to generated reports
@@ -1252,7 +1252,7 @@ def generate_comprehensive_z1_reports(output_dir: str = "output/z1_comprehensive
 
     generator = Z1ComprehensiveReportGenerator(config)
     report_paths = generator.generate_comprehensive_reports(
-        use_robin_api=use_robin_api,
+        use_source_api=use_source_api,
         start_year=start_year,
         api_key=api_key
     )
@@ -1265,7 +1265,7 @@ if __name__ == "__main__":
 
     report_paths = generate_comprehensive_z1_reports(
         output_dir="output/comprehensive_z1_reports",
-        use_robin_api=True,
+        use_source_api=True,
         start_year=1950
     )
 

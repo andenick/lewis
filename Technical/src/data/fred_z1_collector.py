@@ -132,7 +132,7 @@ class FREDZ1Collector:
     def _init_fred_manager(self) -> Any:
         """Initialize the local FRED API manager."""
         try:
-            # Try to get API key from the source store centralized system
+            # Try to get API key from the data store centralized system
             api_key = self._get_manager_api_key()
 
             if not api_key:
@@ -1143,7 +1143,7 @@ def collect_z1_data(start_year: int = 1950, use_fred_manager: bool = True) -> FR
 
     Args:
         start_year: Starting year for data collection
-        use_robin_api: Whether to use FRED API (falls back to direct API if unavailable)
+        use_source_api: Whether to use FRED API (falls back to direct API if unavailable)
 
     Returns:
         Initialized data source Z.1 collector with collected data

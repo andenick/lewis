@@ -1,8 +1,6 @@
 # International Economics Analysis Platform
 
-**Status**: Production Ready ✅
-**Version**: 2.0
-**Last Updated**: October 6, 2025
+**Status**: Research showcase — reference implementation
 **Type**: Comprehensive International Economics Research Platform
 
 ---
@@ -17,11 +15,13 @@ A unified platform for international economics analysis combining Balance of Pay
 
 ## Quick Start
 
-### One-Line Execution
-```python
-from Technical.src.platform.international_economics_platform import InternationalEconomicsPlatform
-InternationalEconomicsPlatform().quick_start()  # Loads all data, generates all visualizations
-```
+> **Note on source layout.** Most modules under `Technical/src/` carry a dated
+> filename prefix (e.g. `[2025.10.06] international_economics_platform.py`). Because
+> of the space and brackets, these files are **not importable via a dotted module
+> path** (`from Technical.src.platform.international_economics_platform import ...`
+> will fail). Run them directly as scripts, or load them with `importlib.util`
+> using the exact filename. The code snippets below show the conceptual public API,
+> not literal import statements.
 
 ### Prerequisites
 - Python 3.8+
@@ -135,69 +135,36 @@ list of public data sources and download links.
 **Global Dashboard** (1 multi-panel chart):
 10. 5-panel global economics overview
 
-All visualizations: 300 DPI, professional styling, saved to `Output/Charts/`
+All visualizations: 300 DPI, professional styling, written under `OUTPUT_ROOT` (default `outputs/`)
 
 ---
 
 ## Project Structure
 
 ```
-International Trade/
-├── README.md                                      # This file - master documentation
+lewis/
+├── README.md                 # This file - master documentation
+├── requirements.txt          # Python dependencies
+├── .env.example              # Template for DATA_ROOT / OUTPUT_ROOT / API keys
 │
-├── Output/                                        # USER-FACING DELIVERABLES
-│   ├── Data/
-│   │   └── data source/                                 # Complete economic database
-│   │       ├── README.md                          # REQUIRED: Data provenance documentation
-│   │       ├── FLOW_OF_FUNDS/                     # US Flow of Funds (28,755 obs)
-│   │       │   ├── BEA_IIP/                       # International Investment Position
-│   │       │   ├── BEA_ITA/                       # International Transaction Accounts
-│   │       │   ├── Treasury_Ownership/            # Treasury holdings by sector
-│   │       │   └── Corporate_Equities/            # Foreign equity holdings
-│   │       ├── BALANCE_OF_PAYMENTS/               # Multi-country BoP (981 obs)
-│   │       │   ├── US_BEA/                        # United States (1960-2024)
-│   │       │   ├── UK_ONS/                        # United Kingdom (1946-2023)
-│   │       │   └── Germany_Bundesbank/            # Germany (1971-2024)
-│   │       ├── GDP/World_Bank/                    # GDP normalization data
-│   │       └── IMF/                               # IMF data (framework ready)
-│   ├── Charts/                                    # 10 visualizations (3.4 MB)
-│   │   ├── python_*.png                           # BoP & FoF analysis charts
-│   │   └── global_economics_dashboard.png         # Global overview
-│   └── Documentation/
-│       ├── Methodology/                           # BPM manuals (all 6 editions, 1948-2009)
-│       └── Country_Profiles/                      # JSON exports (US, UK, Germany)
+├── data/                     # Input data root (DATA_ROOT)
+│   └── MANIFEST.md           # Public data sources, download links, provenance
 │
-├── Technical/                                     # IMPLEMENTATION DETAILS
-│   ├── src/
-│   │   ├── data/                                  # Data access layer
-│   │   │   ├── fred_loader.py                     # FRED/BEA data (630 lines)
-│   │   │   └── imf_data_collector.py              # IMF API framework (550 lines)
-│   │   ├── analysis/                              # Analysis layer
-│   │   │   ├── bop_comparative_analysis.py        # Multi-country BoP (560 lines)
-│   │   │   └── flow_of_funds_analysis.py          # US FoF & IIP (550 lines)
-│   │   └── platform/                              # Platform layer
-│   │       ├── international_economics_platform.py # Base platform (430 lines)
-│   │       └── global_economics_platform.py        # Global platform (550 lines)
-│   └── configs/                                   # Configuration files
+├── outputs/                  # Generated charts/reports (OUTPUT_ROOT; created at runtime)
 │
-├── Classfiles/                                    # ORIGINAL R PROJECTS (READ-ONLY)
-│   ├── APE/final_APE/                             # Advanced Political Economy
-│   │   ├── APE_Final3_NA.Rmd                      # Flow of Funds analysis (684 KB)
-│   │   └── _data/Processed/                       # Original R data (preserved)
-│   └── Trade/final_Trade/                         # International Trade
-│       ├── Trade_Visualization_NA.Rmd             # BoP visualizations (183 KB)
-│       └── [Excel data files]                     # Original BoP data (preserved)
-│
-└── Documentation/                                 # PROJECT DOCUMENTATION (10+ files)
-    ├── INTERNATIONAL_ECONOMICS_PLATFORM_COMPLETE.md  # Platform documentation
-    ├── CLASSFILES_INTEGRATION_COMPLETE.md         # Integration report
-    ├── CLASSFILES_ANALYSIS_CATALOG.md             # R projects inventory
-    ├── COMPREHENSIVE_CROSS_BORDER_VALUE_TRANSFERS_FRAMEWORK.md
-    ├── API_RECOMMENDATIONS_AND_DATA_SOURCES.md    # 15+ data sources
-    └── [8 additional documentation files]
+└── Technical/                # Implementation
+    └── src/
+        ├── data/             # Data access layer (FRED/BEA/IMF/World Bank collectors)
+        ├── analysis/         # Analysis layer (BoP, Flow of Funds, capital flows)
+        ├── platform/         # Platform layer (orchestration)
+        ├── dashboard/        # Interactive dashboard
+        └── scripts/          # One-off extraction / utility scripts
 ```
 
-**Note**: The project separates source code (`Technical/`) from generated outputs and keeps complete data provenance.
+**Note**: The project separates source code (`Technical/src/`) from input data
+(`DATA_ROOT`) and generated outputs (`OUTPUT_ROOT`). Many module filenames carry a
+dated prefix (see the Quick Start note). For the authoritative file list, run
+`git ls-files`.
 
 ---
 
@@ -310,12 +277,13 @@ fresh_data = loader.load_bea_iip()
 ### Methodology Standards
 
 - **IMF Balance of Payments Manual 6th Edition (BPM6)**: Current standard (2009-present)
-- **Complete BPM History**: All 6 editions available (1948-2009) in `Output/Documentation/Methodology/`
+- **Complete BPM History**: All 6 editions referenced (1948-2009)
 - **UN System of National Accounts (SNA 2008)**: National accounting framework
 
 ### Data Provenance
 
-**REQUIRED**: See `Output/Data/data source/README.md` (560+ lines) for complete data sourcing, processing steps, and provenance documentation.
+See `data/MANIFEST.md` for the list of public data sources, download links, and
+provenance notes.
 
 ---
 
@@ -365,44 +333,26 @@ fresh_data = loader.load_bea_iip()
 
 ## Documentation Guide
 
-### For Quick Reference
-- **This File (README.md)**: Platform overview and quick start
-- **INTERNATIONAL_ECONOMICS_PLATFORM_COMPLETE.md**: Complete platform documentation
-
-### For Data Users
-- **Output/Data/data source/README.md**: Complete data catalog and provenance (REQUIRED)
-- **CLASSFILES_ANALYSIS_CATALOG.md**: Original R projects inventory
-
-### For Integration & History
-- **CLASSFILES_INTEGRATION_COMPLETE.md**: Integration completion report
-- **FLOW_OF_FUNDS_INTEGRATION_STATUS.md**: FoF integration details
-
-### For API & Data Collection
-- **API_RECOMMENDATIONS_AND_DATA_SOURCES.md**: 15+ data sources with API details
-- **COMPREHENSIVE_CROSS_BORDER_VALUE_TRANSFERS_FRAMEWORK.md**: Cross-border transfer taxonomy
-
-### For Methodology
-- **Output/Documentation/Methodology/**: All 6 BPM editions (1948-2009)
-- **Country-specific methodology docs**: BEA, ONS, Bundesbank guides
-
-### For Development
-- Individual module docstrings: See source files in `Technical/src/`
-- Code comments: Inline documentation throughout
+- **This file (README.md)**: Platform overview, setup, and usage
+- **`data/MANIFEST.md`**: Data catalog — public sources, download links, provenance
+- **`Technical/` README and module docstrings**: Implementation details and the
+  conceptual public API for the analysis/platform/data layers
+- **Inline code comments**: Throughout the source under `Technical/src/`
 
 ---
 
 ## Project History
 
-### Phase 1: Initial Setup (Complete ✅)
+### Phase 1: Initial Setup (Complete)
 - Project structure established
-- data source integration
+- Data store integration
 - FRED data collection (19 series)
 - Methodology documentation (6 BPM editions)
 
-### Phase 2: ClassFiles Integration (Complete ✅)
+### Phase 2: ClassFiles Integration (Complete)
 - APE R project analysis and replication
 - Trade R project analysis and replication
-- Data extraction to data source
+- Data extraction into the data store
 - Python module creation (bop_comparative_analysis.py, flow_of_funds_analysis.py)
 
 ### Phase 3: Platform Development (Complete ✅)
@@ -417,13 +367,10 @@ fresh_data = loader.load_bea_iip()
 - Global dashboard creation
 - IMF data collector framework (imf_data_collector.py)
 
-### Phase 5: Documentation (Complete ✅)
-- Platform documentation (INTERNATIONAL_ECONOMICS_PLATFORM_COMPLETE.md)
-- Integration reports (CLASSFILES_INTEGRATION_COMPLETE.md)
-- Data catalogs (data source README, CLASSFILES_ANALYSIS_CATALOG.md)
+### Phase 5: Documentation (Complete)
+- Platform documentation (this README + module docstrings)
+- Data catalog (`data/MANIFEST.md`)
 - Master README update (this file)
-
-**Current Status**: PRODUCTION READY ✅
 
 ---
 
@@ -492,7 +439,7 @@ fresh_data = loader.load_bea_iip()
 
 ## Best Practices Applied
 
-1. **Data Provenance**: Complete documentation in the source store README
+1. **Data Provenance**: Complete documentation in `data/MANIFEST.md`
 2. **Read-Only Originals**: ClassFiles never modified
 3. **Modular Design**: Separate data/analysis/platform layers
 4. **Cache-First**: Reduce API dependency
@@ -522,14 +469,10 @@ For data sources and download links, see `data/MANIFEST.md`.
 
 - **Project**: International Trade Analysis
 - **Standards**: IMF BPM6 (2009)
-- **Platform Version**: 2.0
-- **Last Updated**: October 6, 2025
 
 **For questions about**:
-- **Data**: See `Output/Data/data source/README.md`
-- **Platform Usage**: See `INTERNATIONAL_ECONOMICS_PLATFORM_COMPLETE.md`
-- **Integration Details**: See `CLASSFILES_INTEGRATION_COMPLETE.md`
-- **APIs & Collection**: See `API_RECOMMENDATIONS_AND_DATA_SOURCES.md`
+- **Data sources & provenance**: See `data/MANIFEST.md`
+- **Platform usage & APIs**: See the module docstrings under `Technical/src/`
 
 ---
 
@@ -543,7 +486,7 @@ This project is part of academic research. Data sources maintain their original 
 
 ---
 
-**Platform Status**: Production Ready ✅
+**Platform Status**: Research showcase — reference implementation
 **Total Observations**: 116,000+
 **Time Span**: 79 years (1945-2024)
 **Countries**: 3 (US, UK, Germany)

@@ -157,7 +157,7 @@ class Z1BOPHistoricalAnalyzer:
             'net_worth': 'TNWBSHNO'
         }
 
-        # Try to collect from the source store FRED API if available
+        # Try to collect from the data store FRED API if available
         try:
             from data.capital_flows_collector import CapitalFlowsCollector
             collector = CapitalFlowsCollector()

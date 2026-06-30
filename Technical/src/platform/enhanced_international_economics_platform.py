@@ -63,16 +63,16 @@ class EnhancedInternationalEconomicsPlatform:
 
     def __init__(self):
         """Initialize the enhanced platform."""
-        self.robin_loader = EnhancedDataLoader()
+        self.source_loader = EnhancedDataLoader()
         self.fred_loader = FREDLoader()
         self.cache = {}
 
         logger.info("Enhanced International Economics Platform initialized")
-        logger.info(f"data source FRED categories: {len(self.robin_loader.fred_categories)}")
+        logger.info(f"data source FRED categories: {len(self.source_loader.fred_categories)}")
 
     def load_all_enhanced_data(self) -> Dict[str, pd.DataFrame]:
         """
-        Load all enhanced data sources from the source store and existing Lewis data.
+        Load all enhanced data sources from the data store and existing Lewis data.
 
         Returns:
             Dictionary with all loaded datasets
@@ -85,7 +85,7 @@ class EnhancedInternationalEconomicsPlatform:
         key_categories = ['trade', 'interest_rates', 'inflation', 'gdp_growth', 'employment']
         for category in key_categories:
             try:
-                df = self.robin_loader.load_fred_category(category)
+                df = self.source_loader.load_fred_category(category)
                 all_data[f'fred_{category}'] = df
                 logger.info(f"✓ FRED {category}: {len(df)} observations")
             except Exception as e:
@@ -93,7 +93,7 @@ class EnhancedInternationalEconomicsPlatform:
 
         # 2. Load Census regional data
         try:
-            census_data = self.robin_loader.load_census_data(sample_size=5000)
+            census_data = self.source_loader.load_census_data(sample_size=5000)
             if not census_data.empty:
                 all_data['census_regional'] = census_data
                 logger.info(f"✓ Census regional: {len(census_data)} observations")
@@ -102,7 +102,7 @@ class EnhancedInternationalEconomicsPlatform:
 
         # 3. Load financial markets data
         try:
-            financial_data = self.robin_loader.load_financial_markets(sample_size=2000)
+            financial_data = self.source_loader.load_financial_markets(sample_size=2000)
             if not financial_data.empty:
                 all_data['financial_markets'] = financial_data
                 logger.info(f"✓ Financial markets: {len(financial_data)} observations")
@@ -303,7 +303,7 @@ class EnhancedInternationalEconomicsPlatform:
             plt.xlabel('Country Rank')
             plt.xticks([])  # Hide country names for clarity
 
-        plt.suptitle('Enhanced International Economics Platform\ndata source Database Integration',
+        plt.suptitle('Enhanced International Economics Platform\nthe data store Integration',
                     fontsize=16, fontweight='bold', y=1.02)
         plt.tight_layout()
 
@@ -490,7 +490,7 @@ def run_enhanced_international_analysis():
 
 if __name__ == "__main__":
     print("=== Enhanced International Economics Platform ===")
-    print("Version 3.0 - data source Database Integration")
+    print("Version 3.0 - the data store Integration")
     print()
 
     # Run the complete enhanced analysis

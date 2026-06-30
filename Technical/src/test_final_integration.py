@@ -16,7 +16,7 @@ DATA_ROOT = Path(os.environ.get("DATA_ROOT", "data"))
 def main():
     """Test final integration of enhanced platform."""
     print("=== Final Enhanced Lewis Platform Integration Test ===")
-    print("Version 3.0 - data source Database Integration")
+    print("Version 3.0 - Data Store Integration")
     print()
 
     # Initialize data source loader

@@ -70,7 +70,7 @@ class EnhancedDataLoader:
         logger.info(f"Available FRED categories: {len(self.fred_categories)}")
 
     def _discover_fred_files(self):
-        """Auto-discover FRED data files in the source store directory."""
+        """Auto-discover FRED data files in the data store directory."""
         discovered_categories = {}
 
         # Look for CSV files with date prefixes
@@ -100,12 +100,12 @@ class EnhancedDataLoader:
             for category, filename in discovered_categories.items():
                 logger.info(f"  - {category}: {filename}")
         else:
-            logger.warning("No FRED files discovered in the source store directory")
+            logger.warning("No FRED files discovered in the data store directory")
 
     def load_fred_category(self, category: str, start_date: Optional[str] = None,
                           end_date: Optional[str] = None) -> pd.DataFrame:
         """
-        Load a specific FRED data category from the source store.
+        Load a specific FRED data category from the data store.
 
         Args:
             category: FRED category name (e.g., 'trade', 'interest_rates')
@@ -156,7 +156,7 @@ class EnhancedDataLoader:
     def load_all_fred_data(self, start_date: Optional[str] = None,
                           end_date: Optional[str] = None) -> Dict[str, pd.DataFrame]:
         """
-        Load all FRED categories from the source store.
+        Load all FRED categories from the data store.
 
         Args:
             start_date: Optional start date filter
@@ -165,7 +165,7 @@ class EnhancedDataLoader:
         Returns:
             Dictionary mapping category names to DataFrames
         """
-        logger.info("Loading all FRED categories from the source store...")
+        logger.info("Loading all FRED categories from the data store...")
 
         all_data = {}
         total_obs = 0
@@ -184,7 +184,7 @@ class EnhancedDataLoader:
 
     def create_international_trade_dataset(self) -> pd.DataFrame:
         """
-        Create a comprehensive international trade dataset from the source store sources.
+        Create a comprehensive international trade dataset from the data store.
 
         Returns:
             DataFrame with international trade data from multiple sources
@@ -325,7 +325,7 @@ class EnhancedDataLoader:
 
     def load_census_data(self, sample_size: Optional[int] = None) -> pd.DataFrame:
         """
-        Load Census demographic and economic data from the source store.
+        Load Census demographic and economic data from the data store.
 
         Args:
             sample_size: Optional limit on number of records to load
@@ -339,7 +339,7 @@ class EnhancedDataLoader:
         census_files = list(self.census_path.glob("**/*.csv"))
 
         if not census_files:
-            logger.warning("No Census CSV files found in the source store")
+            logger.warning("No Census CSV files found in the data store")
             return pd.DataFrame()
 
         dfs = []
@@ -372,7 +372,7 @@ class EnhancedDataLoader:
 
     def load_financial_markets(self, sample_size: Optional[int] = None) -> pd.DataFrame:
         """
-        Load financial market data from the source store (Alpha Vantage).
+        Load financial market data from the data store (Alpha Vantage).
 
         Args:
             sample_size: Optional limit on number of records to load
@@ -386,7 +386,7 @@ class EnhancedDataLoader:
         av_files = list(self.alpha_vantage_path.glob("**/*.csv"))
 
         if not av_files:
-            logger.warning("No Alpha Vantage files found in the source store")
+            logger.warning("No Alpha Vantage files found in the data store")
             return pd.DataFrame()
 
         dfs = []

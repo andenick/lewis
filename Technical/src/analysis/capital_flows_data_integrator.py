@@ -125,7 +125,7 @@ class CapitalFlowsDataIntegrator:
             # Use source data collector for real international capital flows data
             from data.capital_flows_collector import collect_capital_flows_data
 
-            logger.info("Collecting real BOP data using the source store protocol...")
+            logger.info("Collecting real BOP data using the data store protocol...")
             source_data, _ = collect_capital_flows_data(
                 start_year=self.config.start_year,
                 end_year=self.config.end_year,
@@ -136,7 +136,7 @@ class CapitalFlowsDataIntegrator:
             bop_data = self._extract_bop_from_source_data(source_data)
 
             if bop_data.empty:
-                logger.warning("No BOP data found in the source store collection, using synthetic data...")
+                logger.warning("No BOP data found in the data store collection, using synthetic data...")
                 bop_data = self._create_synthetic_bop_data()
             else:
                 logger.info(f"✓ Real BOP data collected: {len(bop_data)} observations")
@@ -154,7 +154,7 @@ class CapitalFlowsDataIntegrator:
 
     def _load_fdi_data(self) -> pd.DataFrame:
         """
-        Load Foreign Direct Investment data from the source store and IMF CDIS.
+        Load Foreign Direct Investment data from the data store and IMF CDIS.
 
         Returns:
             pd.DataFrame: Harmonized FDI data
@@ -163,7 +163,7 @@ class CapitalFlowsDataIntegrator:
             # Use source data collector for real FDI data
             from data.capital_flows_collector import collect_capital_flows_data
 
-            logger.info("Collecting real FDI data using the source store protocol...")
+            logger.info("Collecting real FDI data using the data store protocol...")
             source_data, _ = collect_capital_flows_data(
                 start_year=self.config.start_year,
                 end_year=self.config.end_year,
@@ -174,7 +174,7 @@ class CapitalFlowsDataIntegrator:
             fdi_data = self._extract_fdi_from_source_data(source_data)
 
             if fdi_data.empty:
-                logger.warning("No FDI data found in the source store collection, using synthetic data...")
+                logger.warning("No FDI data found in the data store collection, using synthetic data...")
                 fdi_data = self._create_synthetic_fdi_data()
             else:
                 logger.info(f"✓ Real FDI data collected: {len(fdi_data)} observations")
@@ -245,7 +245,7 @@ class CapitalFlowsDataIntegrator:
             # Use source data collector for real macro data
             from data.capital_flows_collector import collect_capital_flows_data
 
-            logger.info("Collecting real macro data using the source store protocol...")
+            logger.info("Collecting real macro data using the data store protocol...")
             source_data, _ = collect_capital_flows_data(
                 start_year=self.config.start_year,
                 end_year=self.config.end_year,
@@ -256,7 +256,7 @@ class CapitalFlowsDataIntegrator:
             macro_data = self._extract_macro_from_source_data(source_data)
 
             if macro_data.empty:
-                logger.warning("No macro data found in the source store collection, using synthetic data...")
+                logger.warning("No macro data found in the data store collection, using synthetic data...")
                 macro_data = self._create_synthetic_macro_data()
             else:
                 logger.info(f"✓ Real macro data collected: {len(macro_data)} observations")
@@ -586,7 +586,7 @@ class CapitalFlowsDataIntegrator:
         return macro_data.set_index('date')
 
     def _extract_bop_from_source_data(self, source_data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
-        """Extract BOP-related data from the source store collected data."""
+        """Extract BOP-related data from the data store collected data."""
         bop_data = pd.DataFrame()
 
         # BOP series identifiers from source data
@@ -598,9 +598,9 @@ class CapitalFlowsDataIntegrator:
             'boptef': 'total_trade'
         }
 
-        for robin_series, bop_column in bop_series_mapping.items():
-            if robin_series in source_data and not source_data[robin_series].empty:
-                bop_data[bop_column] = source_data[robin_series].iloc[:, 0]  # Extract single column
+        for source_series, bop_column in bop_series_mapping.items():
+            if source_series in source_data and not source_data[source_series].empty:
+                bop_data[bop_column] = source_data[source_series].iloc[:, 0]  # Extract single column
 
         # Calculate derived components if available
         if 'trade_balance' in bop_data.columns:
@@ -618,7 +618,7 @@ class CapitalFlowsDataIntegrator:
         return bop_data
 
     def _extract_fdi_from_source_data(self, source_data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
-        """Extract FDI-related data from the source store collected data."""
+        """Extract FDI-related data from the data store collected data."""
         fdi_data = pd.DataFrame()
 
         # FDI series identifiers from source data
@@ -629,9 +629,9 @@ class CapitalFlowsDataIntegrator:
             'fygfda': 'us_assets_abroad'
         }
 
-        for robin_series, fdi_column in fdi_series_mapping.items():
-            if robin_series in source_data and not source_data[robin_series].empty:
-                fdi_data[fdi_column] = source_data[robin_series].iloc[:, 0]
+        for source_series, fdi_column in fdi_series_mapping.items():
+            if source_series in source_data and not source_data[source_series].empty:
+                fdi_data[fdi_column] = source_data[source_series].iloc[:, 0]
 
         # Calculate derived components if available
         if len(fdi_data) > 0:
@@ -644,7 +644,7 @@ class CapitalFlowsDataIntegrator:
         return fdi_data
 
     def _extract_macro_from_source_data(self, source_data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
-        """Extract macroeconomic data from the source store collected data."""
+        """Extract macroeconomic data from the data store collected data."""
         macro_data = pd.DataFrame()
 
         # Macro series identifiers from source data
@@ -661,9 +661,9 @@ class CapitalFlowsDataIntegrator:
             'indpro': 'industrial_production'
         }
 
-        for robin_series, macro_column in macro_series_mapping.items():
-            if robin_series in source_data and not source_data[robin_series].empty:
-                macro_data[macro_column] = source_data[robin_series].iloc[:, 0]
+        for source_series, macro_column in macro_series_mapping.items():
+            if source_series in source_data and not source_data[source_series].empty:
+                macro_data[macro_column] = source_data[source_series].iloc[:, 0]
 
         # Calculate derived components if available
         if len(macro_data) > 0:

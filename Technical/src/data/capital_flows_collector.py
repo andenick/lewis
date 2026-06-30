@@ -4,8 +4,8 @@ Capital flows Data Collector - Lewis Platform Integration
 ============================================================
 
 Comprehensive capital flows data collector using the FRED API protocol.
-Collects real international capital flows data from the source store FRED database
-and working copies from data source_clair for sophisticated analysis.
+Collects real international capital flows data from the data store FRED database
+and working copies from the local data store for sophisticated analysis.
 
 This module leverages the existing data infrastructure to collect:
 - Balance of Payments data (BOPGSTB, BOPGEXP, BOPGIMP)
@@ -16,7 +16,7 @@ This module leverages the existing data infrastructure to collect:
 
 Key Features:
 - FRED API integration for FRED data collection
-- data source_clair working data integration
+- the local data store working data integration
 - Real data series discovery via data source comprehensive collector
 - data source-compatible error handling and retry logic
 - data source authentication and rate limiting protocols
@@ -53,7 +53,7 @@ TECHNICAL_ROOT = Path(__file__).resolve().parents[2]  # repo .../Technical
 @dataclass
 class CapitalFlowsConfig:
     """Configuration for data source capital flows data collection."""
-    start_year: int = 1992  # Start of available BOP data in the source store
+    start_year: int = 1992  # Start of available BOP data in the data store
     end_year: int = 2025
     frequency: str = "monthly"  # source data frequency
     api_key: str = os.environ.get("FRED_API_KEY", "")  # set via FRED_API_KEY
@@ -62,7 +62,7 @@ class CapitalFlowsConfig:
     max_retries: int = 3
     retry_delay: float = 1.0
     timeout: int = 30
-    use_robin_working_data: bool = True
+    use_source_working_data: bool = True
 
 class CapitalFlowsCollector:
     """
@@ -97,7 +97,7 @@ class CapitalFlowsCollector:
 
     def collect_all_capital_flows_data(self) -> Dict[str, pd.DataFrame]:
         """
-        Collect all capital flows data using the source store protocol.
+        Collect all capital flows data using the data store protocol.
 
         Returns:
             Dict[str, pd.DataFrame]: Collected capital flows datasets
@@ -115,15 +115,15 @@ class CapitalFlowsCollector:
         else:
             logger.info("[INFO] No existing source data found, proceeding with collection")
 
-        # 1. Collect working data from data source_clair if available
-        if self.config.use_robin_working_data:
-            logger.info("Phase 1: Collecting working data from data source_clair...")
-            working_data = self._collect_robin_working_data()
+        # 1. Collect working data from the local data store if available
+        if self.config.use_source_working_data:
+            logger.info("Phase 1: Collecting working data from the local data store...")
+            working_data = self._collect_source_working_data()
             all_data.update(working_data)
 
         # 2. Use existing data source FRED collectors if available
         logger.info("Phase 2: Using data source FRED collectors...")
-        fred_data = self._collect_from_robin_fred_collectors()
+        fred_data = self._collect_from_source_fred_collectors()
         all_data.update(fred_data)
 
         # 3. Collect additional FRED series as fallback
@@ -237,7 +237,7 @@ class CapitalFlowsCollector:
         logger.info(f"[PASS] Collected {len(existing_data)} existing data series from Lewis project")
         return existing_data
 
-    def _collect_from_robin_fred_collectors(self) -> Dict[str, pd.DataFrame]:
+    def _collect_from_source_fred_collectors(self) -> Dict[str, pd.DataFrame]:
         """Collect data using existing data source FRED collectors."""
         fred_data = {}
 
@@ -273,11 +273,11 @@ class CapitalFlowsCollector:
 
         return fred_data
 
-    def _collect_robin_working_data(self) -> Dict[str, pd.DataFrame]:
-        """Collect working data from data source_clair directory."""
+    def _collect_source_working_data(self) -> Dict[str, pd.DataFrame]:
+        """Collect working data from the local data store directory."""
         working_data = {}
 
-        # BOP series from the source store working data
+        # BOP series from the data store working data
         bop_series = {
             'BOPGSTB': 'Trade Balance: Goods and Services',
             'BOPGEXP': 'Exports of Goods',
@@ -297,7 +297,7 @@ class CapitalFlowsCollector:
                 for pattern in file_patterns:
                     file_path = self.working_data_path / pattern
                     if file_path.exists():
-                        data = self._load_robin_csv(file_path, series_id)
+                        data = self._load_source_csv(file_path, series_id)
                         break
 
                 if data is not None:
@@ -305,7 +305,7 @@ class CapitalFlowsCollector:
                     logger.info(f"✓ Loaded {description}: {len(data)} observations")
                     self.stats["series_collected"] += 1
                 else:
-                    logger.warning(f"✗ {description} not found in the source store working data")
+                    logger.warning(f"✗ {description} not found in the data store working data")
 
             except Exception as e:
                 logger.error(f"Error loading {series_id}: {e}")
@@ -314,7 +314,7 @@ class CapitalFlowsCollector:
         return working_data
 
     def _collect_fred_capital_flows(self) -> Dict[str, pd.DataFrame]:
-        """Collect capital flows data using the source store FRED API."""
+        """Collect capital flows data using the data store FRED API."""
         fred_data = {}
 
         # Key FRED series for capital flows analysis - UPDATED WITH CORRECT SERIES IDs
@@ -463,8 +463,8 @@ class CapitalFlowsCollector:
 
         return None
 
-    def _load_robin_csv(self, file_path: Path, series_id: str) -> pd.DataFrame:
-        """Load CSV data from the source store working directory."""
+    def _load_source_csv(self, file_path: Path, series_id: str) -> pd.DataFrame:
+        """Load CSV data from the data store working directory."""
         try:
             # Read data source CSV file
             df = pd.read_csv(file_path)
@@ -541,7 +541,7 @@ class CapitalFlowsCollector:
         elapsed_time = (datetime.now() - self.stats["start_time"]).total_seconds()
 
         logger.info("=" * 60)
-        logger.info("ROBIN CAPITAL FLOWS DATA COLLECTION SUMMARY")
+        logger.info("SOURCE CAPITAL FLOWS DATA COLLECTION SUMMARY")
         logger.info("=" * 60)
         logger.info(f"Series Discovered: {self.stats['series_discovered']}")
         logger.info(f"Series Collected: {self.stats['series_collected']}")
@@ -560,7 +560,7 @@ class CapitalFlowsCollector:
                 'end_year': self.config.end_year,
                 'frequency': self.config.frequency,
                 'api_source': 'data source FRED API',
-                'working_data_used': self.config.use_robin_working_data
+                'working_data_used': self.config.use_source_working_data
             },
             'statistics': self.stats,
             'output_roots': {
@@ -587,7 +587,7 @@ def collect_capital_flows_data(start_year: int = 1992,
     config = CapitalFlowsConfig(
         start_year=start_year,
         end_year=end_year,
-        use_robin_working_data=use_working_data
+        use_source_working_data=use_working_data
     )
 
     collector = CapitalFlowsCollector(config)
@@ -600,7 +600,7 @@ if __name__ == "__main__":
     # Demonstration
     logger.info("Demonstrating Capital flows Data Collector...")
 
-    # Collect data using the source store protocol
+    # Collect data using the data store protocol
     data, metadata = collect_capital_flows_data(
         start_year=1992,
         end_year=2025,

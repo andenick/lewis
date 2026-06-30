@@ -15,14 +15,14 @@ DATA_ROOT = Path(os.environ.get("DATA_ROOT", "data"))
 def test_enhanced_platform():
     """Test the enhanced platform functionality."""
     print("=== Enhanced International Economics Platform Test ===")
-    print("Version 3.0 - data source Database Integration")
+    print("Version 3.0 - the data store Integration")
     print()
 
     # Initialize loaders
-    robin_loader = EnhancedDataLoader()
+    source_loader = EnhancedDataLoader()
     fred_loader = FREDLoader()
 
-    print(f"✓ data source loader initialized with {len(robin_loader.fred_categories)} FRED categories")
+    print(f"✓ data source loader initialized with {len(source_loader.fred_categories)} FRED categories")
 
     # Test data loading
     print("\n1. Loading enhanced data...")
@@ -32,7 +32,7 @@ def test_enhanced_platform():
     key_categories = ['trade', 'interest_rates', 'inflation']
     for category in key_categories:
         try:
-            df = robin_loader.load_fred_category(category)
+            df = source_loader.load_fred_category(category)
             data[f'fred_{category}'] = df
             print(f"✓ FRED {category}: {len(df):,} observations")
         except Exception as e:
@@ -40,7 +40,7 @@ def test_enhanced_platform():
 
     # Load Census data
     try:
-        census_data = robin_loader.load_census_data(sample_size=1000)
+        census_data = source_loader.load_census_data(sample_size=1000)
         if not census_data.empty:
             data['census_regional'] = census_data
             print(f"✓ Census regional: {len(census_data)} observations")
@@ -49,7 +49,7 @@ def test_enhanced_platform():
 
     # Load financial markets
     try:
-        financial_data = robin_loader.load_financial_markets(sample_size=1000)
+        financial_data = source_loader.load_financial_markets(sample_size=1000)
         if not financial_data.empty:
             data['financial_markets'] = financial_data
             print(f"✓ Financial markets: {len(financial_data)} observations")

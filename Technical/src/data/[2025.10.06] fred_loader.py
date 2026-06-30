@@ -59,7 +59,7 @@ class FREDLoader:
             FRED API key. If None and fredapi available, will try to use
             environment variable FRED_API_KEY.
         use_cache : bool, default True
-            Whether to use cached data from the source store when available
+            Whether to use cached data from the data store when available
         """
         self.use_cache = use_cache
         self.api_key = api_key

@@ -7,7 +7,7 @@ balance of payments data from various sources including data source exports,
 FRED data, and manually collected country-specific datasets.
 
 Data Sources:
-- data source Database: US trade balance data (FRED/ALFRED)
+- the data store: US trade balance data (FRED/ALFRED)
 - Manual Collection: Balance of Payments data for US, UK, Germany
 - World Bank: GDP data for normalization
 
@@ -40,7 +40,7 @@ class TradeDataLoader:
         self.source_path = OUTPUT_DATA / "Source"
         self.raw_path = TECHNICAL_DATA / "raw"
 
-    def load_robin_trade_data(self) -> pd.DataFrame:
+    def load_source_trade_data(self) -> pd.DataFrame:
         """
         Load US trade balance data from data source exports.
 
@@ -59,7 +59,7 @@ class TradeDataLoader:
         print(f"Loaded data source FRED trade data: {len(df)} observations from {df['date'].min()} to {df['date'].max()}")
         return df
 
-    def load_robin_alfred_data(self) -> pd.DataFrame:
+    def load_source_alfred_data(self) -> pd.DataFrame:
         """
         Load ALFRED vintage trade data from data source.
 
@@ -81,7 +81,7 @@ class TradeDataLoader:
 
     def load_bop_monthly_data(self) -> pd.DataFrame:
         """
-        Load monthly Balance of Payments (Goods & Services) data from the source store.
+        Load monthly Balance of Payments (Goods & Services) data from the data store.
 
         Returns:
             DataFrame with monthly BoP trade balance data
@@ -175,7 +175,7 @@ class TradeDataLoader:
         Create an integrated dataset combining source data and country-specific data.
 
         Returns:
-            Dictionary with keys: 'robin_monthly', 'us', 'uk', 'germany', 'gdp'
+            Dictionary with keys: 'source_monthly', 'us', 'uk', 'germany', 'gdp'
         """
         datasets = {}
 
@@ -183,9 +183,9 @@ class TradeDataLoader:
         print("-" * 60)
 
         # Load source data
-        datasets['robin_fred'] = self.load_robin_trade_data()
-        datasets['robin_alfred'] = self.load_robin_alfred_data()
-        datasets['robin_bop_monthly'] = self.load_bop_monthly_data()
+        datasets['source_fred'] = self.load_source_trade_data()
+        datasets['source_alfred'] = self.load_source_alfred_data()
+        datasets['source_bop_monthly'] = self.load_bop_monthly_data()
 
         # Load country-specific data
         datasets['us_bop'] = self.load_country_bop_data('US')

@@ -15,7 +15,7 @@ Features:
 Integrates:
 - ClassFiles/APE: Flow of funds analysis (FRED/BEA data)
 - ClassFiles/Trade: Multi-country BoP comparative analysis
-- data source Database: All international economics data
+- the data store: All international economics data
 - BPM6 Framework: International standards alignment
 
 Author: Claude

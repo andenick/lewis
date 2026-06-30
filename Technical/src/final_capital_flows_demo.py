@@ -468,28 +468,28 @@ def run_final_capital_flows_demonstration():
 
         try:
             from data.capital_flows_collector import collect_capital_flows_data
-            source_data, robin_metadata = collect_capital_flows_data(
+            source_data, source_metadata = collect_capital_flows_data(
                 start_year=1992, end_year=2025, use_working_data=True
             )
 
             if len(source_data) >= 3:
                 print(f"[PASS] Successfully collected {len(source_data)} data series")
                 analysis_data = source_data
-                analysis_metadata = robin_metadata
+                analysis_metadata = source_metadata
                 data_source = "API and working data"
-                use_robin = True
+                use_source = True
             else:
                 print(f"[INFO] Limited source data available, using production demonstration data")
                 analysis_data, analysis_metadata = create_production_data(1992, 2025)
                 data_source = "Production Demonstration Data (source data unavailable)"
-                use_robin = False
+                use_source = False
 
         except Exception as e:
             print(f"[INFO] data collection failed: {e}")
             print("[INFO] Using production-quality demonstration data")
             analysis_data, analysis_metadata = create_production_data(1992, 2025)
             data_source = "Production Demonstration Data (source data unavailable)"
-            use_robin = False
+            use_source = False
 
         print(f"[PASS] Data collection completed: {data_source}")
         print(f"  Series Available: {len(analysis_data)}")
@@ -597,7 +597,7 @@ def run_final_capital_flows_demonstration():
         print("DATA PROVENANCE AND QUALITY:")
         print("-" * 35)
         print(f"Primary Data Source: {data_source}")
-        print(f"Data integration: {'Successful' if use_robin else 'Intelligent fallback applied'}")
+        print(f"Data integration: {'Successful' if use_source else 'Intelligent fallback applied'}")
         print("Quality Assurance: Comprehensive validation completed")
         print("Methodological Standards: Academic and professional rigor")
         print("Reproducibility: Fully documented analytical process")

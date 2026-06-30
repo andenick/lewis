@@ -8,7 +8,7 @@ using real source data instead of synthetic data.
 
 This demonstrates:
 1. FRED API data collection for international capital flows
-2. Integration with working data from database_clair
+2. Integration with working data from the local data store
 3. Real data econometric analysis and findings
 4. Professional report generation with actual data insights
 
@@ -34,7 +34,7 @@ sys.path.append(str(Path(__file__).parent))
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def analyze_robin_capital_flows():
+def analyze_source_capital_flows():
     """Analyze capital flows using real source data."""
     logger.info("Starting Capital flows Analysis...")
     start_time = time.time()
@@ -46,14 +46,14 @@ def analyze_robin_capital_flows():
 
         print("=" * 80)
         print("LEWIS INTERNATIONAL ECONOMICS PLATFORM")
-        print("ROBIN CAPITAL FLOWS ANALYSIS - REAL DATA DEMONSTRATION")
+        print("SOURCE CAPITAL FLOWS ANALYSIS - REAL DATA DEMONSTRATION")
         print("=" * 80)
         print()
 
         # Step 1: Collect real source data
-        print("STEP 1: COLLECTING REAL CAPITAL FLOWS DATA FROM ROBIN")
+        print("STEP 1: COLLECTING REAL CAPITAL FLOWS DATA FROM SOURCE")
         print("-" * 60)
-        print("Using FRED API protocol and working data from database_clair...")
+        print("Using FRED API protocol and working data from the local data store...")
         print()
 
         data, metadata = collect_capital_flows_data(
@@ -115,13 +115,13 @@ def analyze_robin_capital_flows():
         print("Documenting findings and recommendations based on real data...")
         print()
 
-        summary = create_comprehensive_robin_summary(data, analysis_results, metadata)
+        summary = create_comprehensive_source_summary(data, analysis_results, metadata)
 
         # Save summary
-        output_dir = Path("output/robin_capital_flows_analysis")
+        output_dir = Path("output/source_capital_flows_analysis")
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        summary_file = output_dir / "robin_analysis_summary.txt"
+        summary_file = output_dir / "source_analysis_summary.txt"
         with open(summary_file, 'w', encoding='utf-8') as f:
             f.write(summary)
 
@@ -130,18 +130,18 @@ def analyze_robin_capital_flows():
 
         # Step 5: Display results
         print("=" * 80)
-        print("ROBIN CAPITAL FLOWS ANALYSIS RESULTS")
+        print("SOURCE CAPITAL FLOWS ANALYSIS RESULTS")
         print("=" * 80)
         print()
 
-        print("[PASS] ALL COMPONENTS SUCCESSFULLY EXECUTED WITH REAL ROBIN DATA")
+        print("[PASS] ALL COMPONENTS SUCCESSFULLY EXECUTED WITH REAL SOURCE DATA")
         print(f"[PASS] Total Processing Time: {time.time() - start_time:.2f} seconds")
         print()
 
-        print("ROBIN DATA INTEGRATION CAPABILITIES DEMONSTRATED:")
+        print("SOURCE DATA INTEGRATION CAPABILITIES DEMONSTRATED:")
         print("-" * 60)
         print("[PASS] data source FRED API integration with real data collection")
-        print("[PASS] working data integration from database_clair")
+        print("[PASS] working data integration from the local data store")
         print("[PASS] Real data econometric analysis and modeling")
         print("[PASS] Professional insights based on actual data trends")
         print("[PASS] data source protocol compliance and authentication")
@@ -156,10 +156,10 @@ def analyze_robin_capital_flows():
         print("• Interest rate relationships with investment decisions")
         print()
 
-        print("ROBIN INTEGRATION STATUS:")
+        print("SOURCE INTEGRATION STATUS:")
         print("-" * 30)
         print("[PASS] FRED API authentication and rate limiting")
-        print("[PASS] data source_clair working data access")
+        print("[PASS] the local data store working data access")
         print("[PASS] data source FRED series discovery and collection")
         print("[PASS] data source metadata and provenance tracking")
         print("[PASS] data source quality assurance and validation")
@@ -184,7 +184,7 @@ def analyze_robin_capital_flows():
         print()
 
         print("=" * 80)
-        print("ROBIN CAPITAL FLOWS ANALYSIS COMPLETED SUCCESSFULLY")
+        print("SOURCE CAPITAL FLOWS ANALYSIS COMPLETED SUCCESSFULLY")
         print("=" * 80)
 
         return True
@@ -196,7 +196,7 @@ def analyze_robin_capital_flows():
 
 def generate_source_data_insights(data: dict, analysis_results: dict) -> str:
     """Generate insights from real source data."""
-    insights = "KEY INSIGHTS FROM REAL ROBIN DATA:\n"
+    insights = "KEY INSIGHTS FROM REAL SOURCE DATA:\n"
     insights += "-" * 40 + "\n\n"
 
     # Analyze trade balance trends
@@ -259,15 +259,15 @@ def generate_source_data_insights(data: dict, analysis_results: dict) -> str:
 
     return insights
 
-def create_comprehensive_robin_summary(data: dict, analysis_results: dict, metadata: dict) -> str:
+def create_comprehensive_source_summary(data: dict, analysis_results: dict, metadata: dict) -> str:
     """Create comprehensive summary of source data analysis."""
     summary = f"""
-ROBIN CAPITAL FLOWS ANALYSIS - COMPREHENSIVE SUMMARY
+SOURCE CAPITAL FLOWS ANALYSIS - COMPREHENSIVE SUMMARY
 ==================================================
 
 Generated by: Lewis International Economics Platform with Data integration
 Date: {datetime.now().strftime("%B %d, %Y")}
-Data Source: data source FRED API and data source_clair working data
+Data Source: data source FRED API and the local data store working data
 Analysis Period: {metadata.get('config', {}).get('start_year', 'N/A')}-{metadata.get('config', {}).get('end_year', 'N/A')}
 
 EXECUTIVE SUMMARY
@@ -283,7 +283,7 @@ DATA COLLECTION METHODOLOGY
 
 Data sources:
 • data source FRED API integration with authenticated access
-• data source_clair working copies (BOPGSTB, BOPGEXP, BOPGIMP)
+• the local data store working copies (BOPGSTB, BOPGEXP, BOPGIMP)
 • Real-time series discovery and collection
 • data source rate limiting and retry protocols
 • Comprehensive metadata tracking and validation
@@ -303,7 +303,7 @@ showing the evolution of deficits/surpluses over the analysis period with
 specific quantifiable trends rather than synthetic approximations.
 
 2. INVESTMENT FLOW PATTERNS
-Foreign Direct Investment and portfolio flow data from the source store sources provide
+Foreign Direct Investment and portfolio flow data from the data store sources provide
 insights into actual investment behavior, showing real responses to economic
 conditions and policy changes.
 
@@ -313,7 +313,7 @@ for understanding capital flow dynamics, enabling precise correlation analysis
 and policy impact assessment.
 
 4. FINANCIAL INTEGRATION METRICS
-Exchange rate and interest rate data from the source store sources allow for accurate
+Exchange rate and interest rate data from the data store sources allow for accurate
 measurement of financial integration and policy transmission mechanisms.
 
 5. ECONOMETRIC RELATIONSHIPS
@@ -321,11 +321,11 @@ Statistical analysis using real data provides quantified relationships
 between variables, with specific R-squared values and statistical significance
 measures for policy relevance assessment.
 
-ROBIN INTEGRATION BENEFITS
+SOURCE INTEGRATION BENEFITS
 ---------------------------
 
 • Data Authenticity: Real data ensures findings reflect actual economic conditions
-• Provenance Tracking: Complete metadata trail from the source store sources to analysis
+• Provenance Tracking: Complete metadata trail from the data store sources to analysis
 • Quality Assurance: data source validation procedures ensure data reliability
 • Update Capability: Automated collection enables current and future analysis
 • Compliance Standards: data source protocols ensure proper data usage and attribution
@@ -352,7 +352,7 @@ TECHNICAL SPECIFICATIONS
 
 Data Sources:
 • data source FRED API: Comprehensive economic time series
-• data source_clair: Working copies of international data
+• the local data store: Working copies of international data
 • API Protocol: RESTful API with data source authentication
 • Storage Format: Time series data with datetime indexing
 
@@ -400,5 +400,5 @@ Analysis completed using {len(data)} real data series with
     return summary.strip()
 
 if __name__ == "__main__":
-    success = analyze_robin_capital_flows()
+    success = analyze_source_capital_flows()
     sys.exit(0 if success else 1)

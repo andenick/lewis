@@ -125,14 +125,14 @@ def analyze_enhanced_capital_flows():
         print()
 
         # Step 1: Attempt data collection first
-        print("STEP 1: ATTEMPTING ROBIN DATA COLLECTION")
+        print("STEP 1: ATTEMPTING SOURCE DATA COLLECTION")
         print("-" * 60)
         print("Prioritizing existing source data per user feedback...")
         print()
 
         try:
             from data.capital_flows_collector import collect_capital_flows_data
-            source_data, robin_metadata = collect_capital_flows_data(
+            source_data, source_metadata = collect_capital_flows_data(
                 start_year=1992,
                 end_year=2025,
                 use_working_data=True

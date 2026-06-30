@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test script to integrate Census data from the source store into Lewis platform.
+Test script to integrate Census data from the data store into Lewis platform.
 """
 
 from pathlib import Path
@@ -11,7 +11,7 @@ sys.path.append(str(Path(__file__).parent))
 from enhanced_data_loader_v2 import EnhancedDataLoader
 
 def test_census_integration():
-    """Test Census data integration from the source store."""
+    """Test Census data integration from the data store."""
     print("=== Census Data Integration Test ===")
 
     loader = EnhancedDataLoader()
@@ -44,7 +44,7 @@ def test_census_integration():
         return False
 
 def test_financial_markets_integration():
-    """Test financial markets data integration from the source store."""
+    """Test financial markets data integration from the data store."""
     print("\n=== Financial Markets Integration Test ===")
 
     loader = EnhancedDataLoader()
