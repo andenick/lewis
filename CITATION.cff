@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+title: "Lewis: International Economics Analysis Platform"
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+authors:
+  - family-names: Anderson
+    given-names: Nicholas
+    email: nickawebbox@gmail.com
+    affiliation: "The New School for Social Research"
+    # orcid: "https://orcid.org/0000-0000-0000-0000"  # Nick to fill
+repository-code: "https://github.com/andenick/lewis"
+abstract: >-
+  A research reference implementation for international economics, combining
+  Balance of Payments (BPM6-aligned), Flow of Funds, and cross-border
+  value-transfer data. Integrates 116,000+ observations spanning 79 years
+  (1945-2024) for the United States, United Kingdom, and Germany, with a complete
+  R-to-Python replication of two advanced data-science projects. Includes
+  multi-country comparative analysis, historical-event studies, a US deep dive,
+  and a publication-quality visualization suite.
+keywords:
+  - international-economics
+  - balance-of-payments
+  - flow-of-funds
+  - bpm6
+  - capital-flows
+# version:        # no tagged release; Nick to fill
+# date-released:  # no tagged release; Nick to fill
+license: MIT
