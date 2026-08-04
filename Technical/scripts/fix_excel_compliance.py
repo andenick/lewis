@@ -306,7 +306,7 @@ def main():
     success = fixer.run_full_fix()
 
     if success:
-        print("\n🎯 ALL EXCEL FILES NOW COMPLY WITH DRUCK STANDARDS!")
+        print("\n🎯 ALL EXCEL FILES NOW MEET THE PROJECT FORMATTING STANDARD!")
     else:
         print("\n⚠️  Some issues remain - manual intervention may be needed")
 

@@ -290,19 +290,31 @@ class EnhancedUnifiedDataLoader:
     # LOAD NEW COUNTRY DATA
     # ========================================================================
 
-    def load_country_data(self, country: str) -> Dict[str, pd.DataFrame]:
+    def load_country_data(self, country: str,
+                          allow_synthetic: bool = False) -> Dict[str, pd.DataFrame]:
         """
         Load data for a specific country using its collector.
+
+        The national statistical APIs behind these collectors require
+        authentication, so no observations are returned unless credentials are
+        configured. Randomly generated placeholder series are NEVER returned by
+        default: pass ``allow_synthetic=True`` to opt in, and the result is then
+        returned under the ``'synthetic_sample_data'`` key so no caller can
+        mistake it for measured data.
 
         Parameters
         ----------
         country : str
             Country name ('Japan', 'Canada', 'France', 'Italy', 'China', 'India', 'Brazil')
+        allow_synthetic : bool, default False
+            Opt in to randomly generated placeholder series for smoke-testing the
+            pipeline shape. Never use the result as data.
 
         Returns
         -------
         dict
-            Dictionary with different data categories
+            Dictionary with different data categories. Empty when no real data is
+            available and ``allow_synthetic`` is False.
         """
         if country not in self.country_collectors:
             print(f"  [WARNING] No collector available for {country}")
@@ -310,21 +322,30 @@ class EnhancedUnifiedDataLoader:
 
         print(f"\n[{country}] Loading data through country collector...")
 
+        if not allow_synthetic:
+            print(
+                f"  [SKIP] {country}: this collector's API requires credentials and no "
+                f"real observations are available. Configure the country's API token, or "
+                f"call load_country_data('{country}', allow_synthetic=True) to generate "
+                f"clearly-labelled placeholder series for a pipeline smoke test."
+            )
+            return {}
+
         try:
             collector = self.country_collectors[country]
 
-            # Generate sample data (since APIs require authentication)
+            # OPT-IN ONLY: randomly generated placeholders, not observations.
             sample_df = collector.generate_sample_data()
 
-            # Create standardized data structure
             sample_data = {
-                'sample_data': sample_df
+                'synthetic_sample_data': sample_df
             }
 
             self.country_data[country] = sample_data
 
             total_obs = sum(len(df) for df in sample_data.values())
-            print(f"  {country} sample data: {total_obs:,} observations")
+            print(f"  [SYNTHETIC] {country}: {total_obs:,} generated placeholder rows "
+                  f"(NOT measured data)")
 
             return sample_data
 
@@ -332,7 +353,8 @@ class EnhancedUnifiedDataLoader:
             print(f"  [ERROR] Failed to load {country} data: {e}")
             return {}
 
-    def load_all_country_data(self) -> Dict[str, Dict[str, pd.DataFrame]]:
+    def load_all_country_data(self,
+                              allow_synthetic: bool = False) -> Dict[str, Dict[str, pd.DataFrame]]:
         """Load data for all new countries."""
         print("\n" + "="*60)
         print("LOADING NEW COUNTRY DATA")
@@ -344,7 +366,7 @@ class EnhancedUnifiedDataLoader:
 
         # Load data for each country
         for country in ['Japan', 'Canada', 'France', 'Italy', 'China', 'India', 'Brazil']:
-            self.load_country_data(country)
+            self.load_country_data(country, allow_synthetic=allow_synthetic)
 
         # Summary
         total_obs = sum(

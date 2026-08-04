@@ -38,6 +38,28 @@ $DATA_ROOT/
 ```
 
 The R Markdown analysis (`Technical/src/analysis/Trade_Visualization_NA.Rmd`)
-reads the Balance-of-Payments workbooks
-(`BoP_USRData_NA.xlsx`, `BoP_UKRData_NA.xlsx`, `BoP_GermanyRData_NA.xlsx`,
-`BoP_WBankGDP_NA.xlsx`) from `DATA_ROOT`.
+reads four Balance-of-Payments workbooks from `DATA_ROOT`:
+`BoP_USRData_NA.xlsx`, `BoP_UKRData_NA.xlsx`, `BoP_GermanyRData_NA.xlsx` and
+`BoP_WBankGDP_NA.xlsx`.
+
+**These four workbooks are not redistributed with this repository**, and no
+sample data ships. They were assembled by hand from coursework extracts, so
+there is no single download URL for them. To reproduce that analysis you have
+to rebuild them from the primary sources below, each of which is free and
+public:
+
+| Workbook | Rebuild from | Source |
+|---|---|---|
+| `BoP_USRData_NA.xlsx` | US balance of payments (ITA), annual | BEA International Transactions — https://apps.bea.gov/iTable/?reqid=62 |
+| `BoP_UKRData_NA.xlsx` | UK balance of payments (Pink Book), annual | ONS — https://www.ons.gov.uk/economy/nationalaccounts/balanceofpayments |
+| `BoP_GermanyRData_NA.xlsx` | German balance of payments, monthly → annual | Deutsche Bundesbank time-series database — https://www.bundesbank.de/en/statistics/time-series-databases |
+| `BoP_WBankGDP_NA.xlsx` | Nominal GDP, current US$ (`NY.GDP.MKTP.CD`) | World Bank Open Data — https://data.worldbank.org/indicator/NY.GDP.MKTP.CD |
+
+Each workbook is a single sheet of years × BoP components (current account,
+capital account, financial account and their major sub-balances) in current US
+dollars, with the World Bank workbook supplying the GDP denominator used for
+the "% of GDP" normalisation. The Python BoP modules read the same four files.
+
+The remaining series listed above are pulled directly from their providers'
+APIs by the collectors under `Technical/src/data/`; those need only the free
+API keys named in `.env.example`.

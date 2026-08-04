@@ -84,12 +84,12 @@ def main():
     # Ensure output directory exists
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # List of LaTeX files to compile (simple versions)
+    # List of LaTeX files to compile
     latex_files = [
-        "methodology_report_simple.tex",
-        "executive_summary_simple.tex",
-        "analysis_report_simple.tex",
-        "reporting_strategy_simple.tex"
+        "methodology_report.tex",
+        "executive_summary.tex",
+        "analysis_report.tex",
+        "reporting_strategy.tex"
     ]
 
     # Check which files exist

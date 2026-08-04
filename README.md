@@ -15,13 +15,17 @@ A unified platform for international economics analysis combining Balance of Pay
 
 ## Quick Start
 
-> **Note on source layout.** Most modules under `Technical/src/` carry a dated
-> filename prefix (e.g. `[2025.10.06] international_economics_platform.py`). Because
-> of the space and brackets, these files are **not importable via a dotted module
-> path** (`from Technical.src.platform.international_economics_platform import ...`
-> will fail). Run them directly as scripts, or load them with `importlib.util`
-> using the exact filename. The code snippets below show the conceptual public API,
-> not literal import statements.
+> **Note on imports.** The modules live under `Technical/src/`, which is the import
+> root. Either run a module directly as a script, or put `Technical/src` on the path
+> first:
+>
+> ```python
+> import sys; sys.path.insert(0, "Technical/src")
+> from data.fred_loader import FREDLoader
+> from analysis.bop_comparative_analysis import BoPComparativeAnalysis
+> ```
+>
+> The examples below use that form.
 
 ### Prerequisites
 - Python 3.8+
@@ -172,8 +176,23 @@ dated prefix (see the Quick Start note). For the authoritative file list, run
 
 ### Platform Interface
 
+> **The two `platform/` modules are the exception.** `Technical/src/platform/`
+> shadows Python's standard-library `platform` module, so it can never be imported
+> as `platform.<module>`. Load those two by file instead (or run them as scripts):
+>
+> ```python
+> import importlib.util, pathlib
+> def load(path, name):
+>     spec = importlib.util.spec_from_file_location(name, path)
+>     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+>     return mod
+> P = pathlib.Path("Technical/src/platform")
+> InternationalEconomicsPlatform = load(P / "international_economics_platform.py",
+>                                       "iecon_platform").InternationalEconomicsPlatform
+> ```
+
 ```python
-from Technical.src.platform.international_economics_platform import InternationalEconomicsPlatform
+# InternationalEconomicsPlatform loaded as shown above
 
 # Initialize platform
 platform = InternationalEconomicsPlatform()
@@ -198,17 +217,17 @@ print(summary)
 
 ```python
 # Balance of Payments Analysis
-from Technical.src.analysis.bop_comparative_analysis import BoPComparativeAnalysis
+from analysis.bop_comparative_analysis import BoPComparativeAnalysis
 
 bop = BoPComparativeAnalysis()
 bop.load_data()
 bop.plot_us_nixon_shock()
 bop.plot_us_nafta_period()
 bop.plot_germany_reunification()
-bop.plot_comparative_analysis()
+bop.plot_comparative_current_financial()
 
 # Flow of Funds Analysis
-from Technical.src.analysis.flow_of_funds_analysis import FlowOfFundsAnalysis
+from analysis.flow_of_funds_analysis import FlowOfFundsAnalysis
 
 fof = FlowOfFundsAnalysis()
 fof.load_all_data()
@@ -221,13 +240,15 @@ fof.plot_treasury_ownership()
 ### Global Platform
 
 ```python
-from Technical.src.platform.global_economics_platform import GlobalEconomicsPlatform
+# Loaded the same way (see the note under Usage Examples):
+#   GlobalEconomicsPlatform = load(P / "global_economics_platform.py",
+#                                  "global_platform").GlobalEconomicsPlatform
 
 # Initialize global platform
 global_platform = GlobalEconomicsPlatform()
 
 # Full execution
-global_platform.execute_full_platform()
+global_platform.execute_full_analysis()
 
 # Individual components
 global_platform.create_country_profile('US', save=True)
@@ -237,18 +258,19 @@ global_platform.generate_global_dashboard(save=True)
 ### Data Access
 
 ```python
-from Technical.src.data.fred_loader import FREDLoader
+from data.fred_loader import FREDLoader
 
 # Initialize (works without API key using cache)
 loader = FREDLoader(use_cache=True)
 
 # Load specific datasets
 iip_data = loader.load_bea_iip()
-ita_data = loader.load_bea_ita_table1_2()
+ita_data = loader.load_bea_ita()
 treasury_data = loader.load_treasury_ownership()
 
-# Or with FRED API key for fresh data
-loader = FREDLoader(api_key='your_fred_api_key', use_cache=False)
+# Or with a FRED API key for fresh data. If FRED_API_KEY is set in the
+# environment it is picked up automatically and api_key can be omitted.
+loader = FREDLoader(api_key='<your FRED API key>', use_cache=False)
 fresh_data = loader.load_bea_iip()
 ```
 
@@ -291,9 +313,12 @@ provenance notes.
 
 ### R-to-Python Translation
 
-**Original R Projects** (867 KB total):
-- `APE_Final3_NA.Rmd` (684 KB): Flow of Funds analysis, 100+ FRED series
-- `Trade_Visualization_NA.Rmd` (183 KB): Multi-country BoP, 25+ visualizations
+**Original R Projects**:
+- `Trade_Visualization_NA.Rmd` (183 KB): Multi-country BoP, 25+ visualizations —
+  **shipped** at `Technical/src/analysis/Trade_Visualization_NA.Rmd`.
+- A second R notebook covering the Flow-of-Funds analysis (100+ FRED series) was the
+  other source for this translation. It is coursework and is **not redistributed
+  here**, so that half of the provenance cannot be verified from this repository.
 
 **Python Equivalents Created**:
 
@@ -315,11 +340,10 @@ provenance notes.
 
 ### Code Statistics
 
-- **Total Python Code**: 3,270 lines across 6 modules
-- **Functions Created**: 40+
-- **Classes Created**: 3 major classes (plus supporting classes)
-- **Visualizations**: 10 professional charts (3.4 MB)
-- **Documentation**: 10+ comprehensive guides (150+ KB)
+- **Total Python code**: ~61,600 lines across 125 tracked modules
+- **Countries with dedicated collectors**: 7 (Japan, Canada, France, Italy, China,
+  India, Brazil) on top of the US / UK / Germany BoP core
+- **Charts**: generated into `OUTPUT_ROOT` at run time; none are committed
 
 ### Performance
 
@@ -420,7 +444,7 @@ provenance notes.
 - **GDP Normalization**: Produces reasonable percentages
 
 ### Code Quality ✅
-- All modules executable without errors
+- Every tracked module parses and its first-party imports resolve
 - Graceful degradation (cache fallback when API unavailable)
 - Type hints throughout
 - Comprehensive docstrings
@@ -447,7 +471,9 @@ provenance notes.
 6. **Error Handling**: Graceful degradation
 7. **Type Safety**: Type hints throughout
 8. **Documentation**: Extensive inline and external docs
-9. **Testing**: All modules tested and validated
+9. **Testing**: the `test_*.py` files under `Technical/src/` are runnable
+   demonstration scripts, not a `pytest` suite — several perform live network
+   calls, so run them individually rather than collecting them
 10. **Standards Compliance**: IMF BPM6
 
 ---
@@ -467,7 +493,7 @@ For data sources and download links, see `data/MANIFEST.md`.
 
 ## Contact & Support
 
-- **Project**: International Trade Analysis
+- **Project**: Lewis — International Economics Analysis Platform
 - **Standards**: IMF BPM6 (2009)
 
 **For questions about**:
@@ -478,7 +504,12 @@ For data sources and download links, see `data/MANIFEST.md`.
 
 ## License
 
-This project is part of academic research. Data sources maintain their original licenses:
+This project is dual-licensed — see [`LICENSE`](LICENSE) and [`LICENSES.md`](LICENSES.md):
+
+- **Code** (everything under `Technical/`, scripts, tooling): **MIT**.
+- **Data & documentation** produced by this project: **CC BY 4.0**.
+
+Upstream data sources keep their own terms:
 - **US Government Data** (BEA, FRED): Public domain
 - **UK ONS Data**: Open Government License
 - **Bundesbank Data**: Available for non-commercial research
@@ -486,13 +517,10 @@ This project is part of academic research. Data sources maintain their original 
 
 ---
 
-**Platform Status**: Research showcase — reference implementation
-**Total Observations**: 116,000+
-**Time Span**: 79 years (1945-2024)
-**Countries**: 3 (US, UK, Germany)
-**Python Code**: 3,270 lines across 6 modules
-**Visualizations**: 10 professional charts
-**Documentation**: 150+ KB across 10+ files
+**Platform status**: Research showcase — reference implementation
+**Time span**: 79 years (1945-2024)
+**Core BoP countries**: 3 (US, UK, Germany), plus 7 further country collectors
+**Python code**: ~61,600 lines across 125 tracked modules
 
 ---
 

@@ -1,4 +1,4 @@
-# International Trade Analysis - Technical Implementation Guide
+# Lewis — Technical Implementation Guide
 
 **Purpose**: Developer and analyst documentation
 **Target Audience**: Programmers, data scientists, AI agents
@@ -7,7 +7,7 @@
 
 ## Overview
 
-This directory contains all technical implementation details for the International Trade Analysis project. This includes source code, raw data, processing pipelines, academic literature, and development artifacts.
+This directory contains the technical implementation of Lewis — the International Economics Analysis Platform: the source code, the processing pipelines and the developer documentation.
 
 **Key Principle**: Technical/ contains "how we built it" while Output/ contains "what we produced"
 
@@ -18,24 +18,28 @@ This directory contains all technical implementation details for the Internation
 ```
 Technical/
 ├── TECHNICAL_README.md            # This file
-├── src/                           # Source code
-│   ├── analysis/                  # Analysis scripts
-│   │   ├── trade_data_loader.py   # Data loading module
-│   │   ├── bop_analysis.py        # Main analysis module
-│   │   └── Trade_Visualization_NA.Rmd  # R markdown visualizations
-│   ├── framework/                 # Core reusable modules (future)
-│   └── scripts/                   # Utility scripts (future)
-├── Knowledge_Base/                # Academic literature and readings
-│   └── Readings/                  # Course readings organized by topic
-├── data/                          # Data storage
-│   ├── raw/                       # Original unmodified data
-│   └── processed/                 # Intermediate processing results
-├── docs/                          # Technical documentation
-├── configs/                       # Configuration files
-├── logs/                          # Processing logs
-└── archive/                       # Historical materials
-    └── deprecated/                # Old code/approaches
+├── docs/                          # LaTeX report sources
+├── scripts/                       # Report-compilation and workbook utilities
+└── src/                           # Source code (the import root)
+    ├── analysis/                  # Analysis modules
+    │   ├── trade_data_loader.py   # Data loading module
+    │   ├── bop_analysis.py        # Balance-of-payments analysis
+    │   └── Trade_Visualization_NA.Rmd  # R Markdown visualisations
+    ├── api/                       # Service layer
+    ├── automation/                # Scheduled update jobs
+    ├── dashboard/                 # Interactive dashboard
+    ├── data/                      # Provider collectors and loaders
+    ├── database/                  # Storage layer
+    ├── platform/                  # Top-level orchestrators (load by file —
+    │                                 #   this name shadows Python's stdlib module)
+    ├── reporting/                 # LaTeX/report generators
+    ├── scripts/                   # One-off collection and extraction scripts
+    └── visualization[s]/          # Chart builders
 ```
+
+Data and outputs are **not** part of this repository: input data is read from
+`DATA_ROOT` and results are written to `OUTPUT_ROOT` (see `.env.example` and
+`data/MANIFEST.md`).
 
 ---
 
@@ -191,58 +195,6 @@ Rscript -e "rmarkdown::render('Trade_Visualization_NA.Rmd')"
 
 ---
 
-## Knowledge Base
-
-### Academic Literature (`Knowledge_Base/Readings/`)
-
-Organized course readings on international trade theory and policy:
-
-#### **01 - Trade protection - statics and dynamics/**
-- Classical trade theory (Ricardo, Mill, Myint)
-- Modern trade protection debates
-- Tariffs and trade wars (2018-2024 studies)
-- Development strategies (Amsden, Chang)
-- Historical perspectives (Palen, Bairoch)
-
-**Key Readings**:
-- `[1958] Myint - Classical Theory of International Trade.pdf`
-- `[2019] Amiti et al - Impact of 2018 Trade War.pdf`
-- `[2024] Clausing & Lovely - Trump Tariff Proposals.pdf`
-- `[1992] Amsden - Asia's Next Giant (South Korea).pdf`
-- `[2002] Chang - Kicking Away the Ladder.pdf`
-
-#### **02 - Mercantilism, the trade balance and exchange rates/**
-- Historical perspectives (Heilbroner)
-- Trade balances and economic growth
-- Exchange rate regimes
-- Modern mercantilism debates (Klein & Pettis)
-
-**Key Readings**:
-- `[1997] Heilbroner - Teachings from Worldly Philosophy.pdf`
-- `[2020] Klein & Pettis - Trade Wars Are Class Wars.pdf`
-- `[2012] Cynamon et al - After the Great Recession.pdf`
-
-#### **03 - Ricardo, comparative advantage and absolute advantage/**
-- Ricardian trade theory
-- Comparative vs absolute advantage
-- Dynamic aspects of trade theory
-- Structural change (Pasinetti)
-- Input trade and globalization (Jones)
-
-**Key Readings**:
-- `[1817] Ricardo - Principles of Political Economy.pdf`
-- `[1983] Maneschi - Dynamic Aspects of Ricardo's Theory.pdf`
-- `[1981] Pasinetti - Structural Change and Economic Growth.pdf`
-- `[2000] Jones - Globalization and Theory of Input Trade.pdf`
-
-**Use Cases**:
-- Theoretical background for empirical analysis
-- Policy context and debates
-- Historical perspectives on current issues
-- Literature reviews and citations
-
----
-
 ## Development Workflow
 
 ### Setting Up Development Environment
@@ -376,7 +328,7 @@ def main():
 
 ### Future: Configuration File
 
-**Planned**: `configs/project_config.yaml`
+**Planned**: a project configuration file; configuration is currently environment-driven (see `.env.example`).
 
 ```yaml
 paths:
@@ -562,7 +514,7 @@ Output/Data/Results/*.xlsx  # Regenerate from code
 Output/Charts/*.png  # Regenerate from code
 
 # Logs
-Technical/logs/*.log
+OUTPUT_ROOT/logs/*.log
 ```
 
 ---
@@ -683,10 +635,9 @@ Technical/logs/*.log
 - **Tidyverse**: https://www.tidyverse.org/
 
 ### Data Standards
-- **IMF BPM6**: `data/raw/BPM6.pdf`
+- **IMF BPM6**: IMF Balance of Payments and International Investment Position Manual, 6th ed. — https://www.imf.org/external/pubs/ft/bop/2007/bopman6.htm
 
 ### Domain Knowledge
-- See `Knowledge_Base/Readings/` for academic literature
 - IMF Balance of Payments methodology
 - National accounts standards (SNA 2008)
 

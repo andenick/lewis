@@ -501,6 +501,11 @@ class BrazilDataCollector:
 
     def generate_sample_data(self) -> pd.DataFrame:
         """
+        WARNING - SYNTHETIC DATA. This method fabricates plausible-looking
+        values with a random number generator. It exists to exercise the
+        pipeline shape, not to supply observations. Never publish, chart or
+        analyse its output as if it were measured data.
+
         Generate sample Brazil data structure for testing purposes.
 
         Returns:

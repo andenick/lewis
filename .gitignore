@@ -10,7 +10,7 @@
 !/data/
 !/data/MANIFEST.md
 /Technical/data/
-/Technical/AnuData/
+/Technical/analysis_workspace/
 /Technical/Knowledge_Base/
 /Technical/output/
 /Technical/logs/
@@ -37,10 +37,6 @@ AGENTS.md
 **/*_WISHLIST*.md
 **/NEXT_STEPS*.md
 **/DECISION_LOG*.md
-**/superpowers/
-**/monitoring/druck_*.py
-**/druck_*.py
-**/test_druck_*.py
 
 # --- Data / large binary file types ---
 *.parquet
@@ -127,3 +123,17 @@ Thumbs.db
 # --- pre-existing truncated/corrupt source files (not shippable) ---
 /Technical/src/data/test_collectors_simple.py
 /Technical/src/z1_bop_latex_templates.py
+
+# --- Build transcripts and generated document scaffolding ---
+*.log
+*.aux
+*.out
+*.toc
+*.synctex.gz
+
+# --- Raw API-response dumps written by the test scripts ---
+Technical/src/data/providers_response.json
+Technical/src/data/series_response.json
+Technical/src/data/series_response_with_obs.json
+Technical/src/data/dbnomics_activation_results.json
+Technical/src/data/dbnomics_working_test_results.json

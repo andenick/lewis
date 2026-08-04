@@ -25,14 +25,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
 sys.path.append(str(PROJECT_ROOT / "Technical" / "src" / "data"))
 
 # Import existing collector
-import importlib.util
-spec = importlib.util.spec_from_file_location(
-    "worldbank_data_collector",
-    PROJECT_ROOT / "Technical" / "src" / "data" / "[2025.10.06] worldbank_data_collector.py"
-)
-worldbank_module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(worldbank_module)
-WorldBankDataCollector = worldbank_module.WorldBankDataCollector
+from worldbank_data_collector import WorldBankDataCollector
 
 # Comprehensive country list (150+ countries)
 COMPREHENSIVE_COUNTRIES = [

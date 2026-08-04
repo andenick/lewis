@@ -56,17 +56,19 @@ class FREDLoader:
         Parameters
         ----------
         api_key : str, optional
-            FRED API key. If None and fredapi available, will try to use
-            environment variable FRED_API_KEY.
+            FRED API key. If None, the FRED_API_KEY environment variable is
+            used when set.
         use_cache : bool, default True
             Whether to use cached data from the data store when available
         """
         self.use_cache = use_cache
-        self.api_key = api_key
+        # Documented behaviour: fall back to the FRED_API_KEY environment
+        # variable when no key is passed explicitly (see .env.example).
+        self.api_key = api_key or os.environ.get("FRED_API_KEY") or None
         self.fred = None
 
-        if FRED_AVAILABLE and api_key:
-            self.fred = Fred(api_key=api_key)
+        if FRED_AVAILABLE and self.api_key:
+            self.fred = Fred(api_key=self.api_key)
         elif not FRED_AVAILABLE:
             print("[INFO] Using cached data from data source")
 
@@ -345,7 +347,10 @@ class FREDLoader:
             Combined data with series_id, date, value, and metadata columns
         """
         if self.fred is None:
-            raise RuntimeError("FRED API not initialized. Provide api_key or use cache.")
+            raise RuntimeError(
+                "FRED API not initialized. Pass api_key=..., set the FRED_API_KEY "
+                "environment variable, or run with use_cache=True."
+            )
 
         all_data = []
 
