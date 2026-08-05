@@ -52,7 +52,7 @@ public:
 |---|---|---|
 | `BoP_USRData_NA.xlsx` | US balance of payments (ITA), annual | BEA International Transactions — https://apps.bea.gov/iTable/?reqid=62 |
 | `BoP_UKRData_NA.xlsx` | UK balance of payments (Pink Book), annual | ONS — https://www.ons.gov.uk/economy/nationalaccounts/balanceofpayments |
-| `BoP_GermanyRData_NA.xlsx` | German balance of payments, monthly → annual | Deutsche Bundesbank time-series database — https://www.bundesbank.de/en/statistics/time-series-databases |
+| `BoP_GermanyRData_NA.xlsx` | German balance of payments, monthly → annual | Deutsche Bundesbank time-series database — https://www.bundesbank.de/en/statistics/time-series-databases-745582 |
 | `BoP_WBankGDP_NA.xlsx` | Nominal GDP, current US$ (`NY.GDP.MKTP.CD`) | World Bank Open Data — https://data.worldbank.org/indicator/NY.GDP.MKTP.CD |
 
 Each workbook is a single sheet of years × BoP components (current account,
