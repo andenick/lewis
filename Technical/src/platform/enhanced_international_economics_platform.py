@@ -87,27 +87,27 @@ class EnhancedInternationalEconomicsPlatform:
             try:
                 df = self.source_loader.load_fred_category(category)
                 all_data[f'fred_{category}'] = df
-                logger.info(f"✓ FRED {category}: {len(df)} observations")
+                logger.info(f"[OK] FRED {category}: {len(df)} observations")
             except Exception as e:
-                logger.warning(f"✗ Failed to load FRED {category}: {e}")
+                logger.warning(f"[X] Failed to load FRED {category}: {e}")
 
         # 2. Load Census regional data
         try:
             census_data = self.source_loader.load_census_data(sample_size=5000)
             if not census_data.empty:
                 all_data['census_regional'] = census_data
-                logger.info(f"✓ Census regional: {len(census_data)} observations")
+                logger.info(f"[OK] Census regional: {len(census_data)} observations")
         except Exception as e:
-            logger.warning(f"✗ Failed to load Census data: {e}")
+            logger.warning(f"[X] Failed to load Census data: {e}")
 
         # 3. Load financial markets data
         try:
             financial_data = self.source_loader.load_financial_markets(sample_size=2000)
             if not financial_data.empty:
                 all_data['financial_markets'] = financial_data
-                logger.info(f"✓ Financial markets: {len(financial_data)} observations")
+                logger.info(f"[OK] Financial markets: {len(financial_data)} observations")
         except Exception as e:
-            logger.warning(f"✗ Failed to load financial markets: {e}")
+            logger.warning(f"[X] Failed to load financial markets: {e}")
 
         # 4. Load OECD data
         try:
@@ -115,17 +115,17 @@ class EnhancedInternationalEconomicsPlatform:
             if oecd_file.exists():
                 oecd_data = pd.read_csv(oecd_file)
                 all_data['oecd_quarterly'] = oecd_data
-                logger.info(f"✓ OECD quarterly: {len(oecd_data)} observations, {oecd_data['country'].nunique()} countries")
+                logger.info(f"[OK] OECD quarterly: {len(oecd_data)} observations, {oecd_data['country'].nunique()} countries")
         except Exception as e:
-            logger.warning(f"✗ Failed to load OECD data: {e}")
+            logger.warning(f"[X] Failed to load OECD data: {e}")
 
         # 5. Load existing Lewis international data
         try:
             existing_data = self.fred_loader.load_all_data()
             all_data.update({f'lewis_{k}': v for k, v in existing_data.items()})
-            logger.info(f"✓ Lewis existing data: {len(existing_data)} datasets")
+            logger.info(f"[OK] Lewis existing data: {len(existing_data)} datasets")
         except Exception as e:
-            logger.warning(f"✗ Failed to load Lewis data: {e}")
+            logger.warning(f"[X] Failed to load Lewis data: {e}")
 
         total_obs = sum(len(df) for df in all_data.values())
         logger.info(f"Loaded total: {total_obs:,} observations across {len(all_data)} datasets")
@@ -158,7 +158,7 @@ class EnhancedInternationalEconomicsPlatform:
                     series_data['year'] = pd.to_datetime(series_data['date']).dt.year
                     annual_data = series_data.groupby('year')['value'].mean().reset_index()
                     results[f'us_{series_id.lower()}_annual'] = annual_data
-                    logger.info(f"✓ US {series_id} annual analysis: {len(annual_data)} years")
+                    logger.info(f"[OK] US {series_id} annual analysis: {len(annual_data)} years")
 
         # 2. Multi-Country OECD Analysis
         if 'oecd_quarterly' in data:
@@ -184,7 +184,7 @@ class EnhancedInternationalEconomicsPlatform:
                         country_summaries.append(summary)
 
                 results['oecd_country_summaries'] = pd.DataFrame(country_summaries)
-                logger.info(f"✓ OECD country summaries: {len(country_summaries)} countries")
+                logger.info(f"[OK] OECD country summaries: {len(country_summaries)} countries")
 
         # 3. Financial Markets vs Trade Analysis
         if 'financial_markets' in data and 'fred_trade' in data:
@@ -208,7 +208,7 @@ class EnhancedInternationalEconomicsPlatform:
                 if not comparison.empty:
                     results['financial_vs_trade'] = comparison
                     correlation = comparison['value_financial'].corr(comparison['value_trade'])
-                    logger.info(f"✓ Financial vs trade correlation: {correlation:.3f}")
+                    logger.info(f"[OK] Financial vs trade correlation: {correlation:.3f}")
 
         return results
 
@@ -315,7 +315,7 @@ class EnhancedInternationalEconomicsPlatform:
         plt.close()
 
         generated_files.append(output_file)
-        logger.info(f"✓ Generated overview visualization: {output_file}")
+        logger.info(f"[OK] Generated overview visualization: {output_file}")
 
         return generated_files
 
@@ -391,9 +391,9 @@ class EnhancedInternationalEconomicsPlatform:
             )
         }
 
-        logger.info(f"✓ Summary report: {summary['total_observations']:,} total observations")
-        logger.info(f"✓ Countries covered: {summary['country_count']}")
-        logger.info(f"✓ Data expansion: {summary['key_metrics']['data_expansion_factor']}x")
+        logger.info(f"[OK] Summary report: {summary['total_observations']:,} total observations")
+        logger.info(f"[OK] Countries covered: {summary['country_count']}")
+        logger.info(f"[OK] Data expansion: {summary['key_metrics']['data_expansion_factor']}x")
 
         return summary
 
@@ -451,9 +451,9 @@ class EnhancedInternationalEconomicsPlatform:
         results['pipeline_end'] = end_time.isoformat()
         results['pipeline_duration'] = str(end_time - start_time)
 
-        logger.info(f"✓ Complete analysis finished in {results['pipeline_duration']}")
-        logger.info(f"✓ Total observations processed: {summary['total_observations']:,}")
-        logger.info(f"✓ Countries covered: {summary['country_count']}")
+        logger.info(f"[OK] Complete analysis finished in {results['pipeline_duration']}")
+        logger.info(f"[OK] Total observations processed: {summary['total_observations']:,}")
+        logger.info(f"[OK] Countries covered: {summary['country_count']}")
 
         return results
 
@@ -476,7 +476,7 @@ class EnhancedInternationalEconomicsPlatform:
                 dataset_file = export_path / f"[{timestamp}] {dataset_name}.csv"
                 data[dataset_name].to_csv(dataset_file, index=False)
 
-        logger.info(f"✓ Results exported to {export_path}")
+        logger.info(f"[OK] Results exported to {export_path}")
 
 
 # Convenience function for running the enhanced platform
@@ -507,11 +507,11 @@ if __name__ == "__main__":
     print(f"Data Expansion Factor: {results['summary']['key_metrics']['data_expansion_factor']}x")
 
     print(f"\n=== Key Achievements ===")
-    print("✓ Integrated data source (15 FRED categories)")
-    print("✓ Added Census regional data (county-level)")
-    print("✓ Added financial markets data")
-    print("✓ Included OECD quarterly data (11 countries)")
-    print("✓ Created comprehensive analysis framework")
-    print("✓ Generated enhanced visualizations")
+    print("[OK] Integrated data source (15 FRED categories)")
+    print("[OK] Added Census regional data (county-level)")
+    print("[OK] Added financial markets data")
+    print("[OK] Included OECD quarterly data (11 countries)")
+    print("[OK] Created comprehensive analysis framework")
+    print("[OK] Generated enhanced visualizations")
 
     print(f"\nAnalysis complete! Check {OUTPUT_PATH} for results.")

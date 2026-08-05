@@ -91,7 +91,7 @@ def test_key_providers_for_countries():
                         'accessible': True
                     })
                 else:
-                    print(f"  ✗ {provider_code}: HTTP {response.status_code}")
+                    print(f"  [X] {provider_code}: HTTP {response.status_code}")
                     country_results.append({
                         'provider': provider_code,
                         'datasets': 0,
@@ -99,7 +99,7 @@ def test_key_providers_for_countries():
                     })
 
             except Exception as e:
-                print(f"  ✗ {provider_code}: Error - {e}")
+                print(f"  [X] {provider_code}: Error - {e}")
                 country_results.append({
                     'provider': provider_code,
                     'datasets': 0,
@@ -163,7 +163,7 @@ def test_specific_datasets():
 
                 if series:
                     observations = series.get('observations', [])
-                    print(f"  ✓ Fetched {len(observations)} observations")
+                    print(f"  [OK] Fetched {len(observations)} observations")
                     print(f"    Period: {observations[0][0] if observations else 'N/A'} to {observations[-1][0] if observations else 'N/A'}")
                     print(f"    Latest value: {observations[-1][1] if observations else 'N/A'}")
 
@@ -174,14 +174,14 @@ def test_specific_datasets():
                         'latest_value': observations[-1][1] if observations else None
                     }
                 else:
-                    print(f"  ✗ No series data found")
+                    print(f"  [X] No series data found")
                     results[country] = {'success': False, 'error': 'No series data found'}
             else:
-                print(f"  ✗ HTTP {response.status_code}")
+                print(f"  [X] HTTP {response.status_code}")
                 results[country] = {'success': False, 'error': f'HTTP {response.status_code}'}
 
         except Exception as e:
-            print(f"  ✗ Error: {e}")
+            print(f"  [X] Error: {e}")
             results[country] = {'success': False, 'error': str(e)}
 
     return results
@@ -196,22 +196,22 @@ def test_collector_functionality():
     try:
         # Initialize collector
         collector = DBnomicsCollector()
-        print("✓ DBnomicsCollector initialized successfully")
+        print("[OK] DBnomicsCollector initialized successfully")
 
         # Test provider list
         providers = collector.list_providers()
-        print(f"✓ Found {len(providers)} providers")
+        print(f"[OK] Found {len(providers)} providers")
 
         # Test searching for data
         print("\nSearching for Japan current account data...")
         search_results = collector.search_series("Japan current account", limit=5)
 
         if search_results:
-            print(f"✓ Found {len(search_results)} search results")
+            print(f"[OK] Found {len(search_results)} search results")
             for i, result in enumerate(search_results[:3], 1):
                 print(f"  {i}. {result.get('dataset_name', 'Unknown')}")
         else:
-            print("✗ No search results found")
+            print("[X] No search results found")
 
         # Test fetching specific data
         print("\nTesting sample data fetch...")
@@ -224,20 +224,20 @@ def test_collector_functionality():
             )
 
             if not sample_df.empty:
-                print(f"✓ Successfully fetched {len(sample_df)} observations")
+                print(f"[OK] Successfully fetched {len(sample_df)} observations")
                 print(f"  Columns: {list(sample_df.columns)}")
                 print(f"  Period range: {sample_df['period'].min()} to {sample_df['period'].max()}")
                 return True
             else:
-                print("✗ No data returned from fetch")
+                print("[X] No data returned from fetch")
                 return False
 
         except Exception as e:
-            print(f"✗ Fetch test failed: {e}")
+            print(f"[X] Fetch test failed: {e}")
             return False
 
     except Exception as e:
-        print(f"✗ Collector test failed: {e}")
+        print(f"[X] Collector test failed: {e}")
         return False
 
 
@@ -249,9 +249,9 @@ def generate_activation_report(api_test, provider_test, dataset_test, collector_
 
     print(f"\n1. API ACCESS:")
     if api_test:
-        print("   ✓ DBnomics API is accessible and functional")
+        print("   [OK] DBnomics API is accessible and functional")
     else:
-        print("   ✗ DBnomics API access failed")
+        print("   [X] DBnomics API access failed")
 
     print(f"\n2. PROVIDER COVERAGE:")
     for country, results in provider_test.items():
@@ -259,21 +259,21 @@ def generate_activation_report(api_test, provider_test, dataset_test, collector_
         total = len(results)
         print(f"   {country}: {accessible}/{total} providers accessible")
         for result in results:
-            status = "✓" if result.get('accessible', False) else "✗"
+            status = "[OK]" if result.get('accessible', False) else "[X]"
             print(f"     {status} {result['provider']}: {result['datasets']} datasets")
 
     print(f"\n3. SPECIFIC DATASETS:")
     for country, result in dataset_test.items():
         if result.get('success', False):
-            print(f"   ✓ {country}: {result['observations']} observations ({result['period_range']})")
+            print(f"   [OK] {country}: {result['observations']} observations ({result['period_range']})")
         else:
-            print(f"   ✗ {country}: {result.get('error', 'Unknown error')}")
+            print(f"   [X] {country}: {result.get('error', 'Unknown error')}")
 
     print(f"\n4. COLLECTOR FUNCTIONALITY:")
     if collector_test:
-        print("   ✓ DBnomicsCollector class is fully functional")
+        print("   [OK] DBnomicsCollector class is fully functional")
     else:
-        print("   ✗ DBnomicsCollector has issues")
+        print("   [X] DBnomicsCollector has issues")
 
     # Overall assessment
     print(f"\n5. ACTIVATION READINESS:")
@@ -288,11 +288,11 @@ def generate_activation_report(api_test, provider_test, dataset_test, collector_
 
     print(f"   Overall success rate: {success_rate:.1f}%")
     if success_rate >= 75:
-        print("   ✓ READY FOR PRODUCTION DATA COLLECTION")
+        print("   [OK] READY FOR PRODUCTION DATA COLLECTION")
     elif success_rate >= 50:
-        print("   ⚠ PARTIAL READINESS - Some configuration needed")
+        print("   [!] PARTIAL READINESS - Some configuration needed")
     else:
-        print("   ✗ NOT READY - Major issues to resolve")
+        print("   [X] NOT READY - Major issues to resolve")
 
     print("="*80)
 

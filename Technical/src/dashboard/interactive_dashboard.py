@@ -221,7 +221,7 @@ class LewisInteractiveDashboard:
                 cards = []
                 for i, (title, value, change) in enumerate(metrics_data[:4]):  # Show top 4 metrics
                     color = "success" if change > 0 else "danger" if change < 0 else "secondary"
-                    icon = "↑" if change > 0 else "↓" if change < 0 else "→"
+                    icon = "^" if change > 0 else "v" if change < 0 else "->"
 
                     cards.append(
                         dbc.Col([

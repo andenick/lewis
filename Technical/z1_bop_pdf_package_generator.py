@@ -347,7 +347,7 @@ Successfully Compiled: {len(successful_reports)}
 Compilation Success Rate: {len(successful_reports)/total_reports*100:.1f}%
 
 Available Reports:
-{chr(10).join([f"✓ {report.replace('_', ' ').title()}" for report in successful_reports])}
+{chr(10).join([f"[OK] {report.replace('_', ' ').title()}" for report in successful_reports])}
 
 ANALYSIS SCOPE
 --------------
@@ -428,12 +428,12 @@ USAGE NOTES
 QUALITY ASSURANCE
 -----------------
 
-✓ Data validation and cleaning completed
-✓ Statistical significance testing performed
-✓ Visualization quality standards met
-✓ LaTeX compilation successful
-✓ Cross-referencing and citations validated
-✓ Professional formatting standards applied
+[OK] Data validation and cleaning completed
+[OK] Statistical significance testing performed
+[OK] Visualization quality standards met
+[OK] LaTeX compilation successful
+[OK] Cross-referencing and citations validated
+[OK] Professional formatting standards applied
 
 This executive summary provides an overview of the comprehensive analytical
 package designed to support evidence-based policy decision-making and academic
@@ -590,18 +590,18 @@ def main():
     print("=" * 80)
 
     if result['status'] == 'success':
-        print(f"✓ Package generation completed successfully!")
-        print(f"✓ Reports generated: {result['reports_generated']}")
-        print(f"✓ Reports compiled: {result['reports_successful']}")
-        print(f"✓ Visualizations created: {result['visualizations_generated']}")
-        print(f"✓ Executive summary: {result['summary']}")
-        print(f"✓ Package manifest: {result['manifest']}")
+        print(f"[OK] Package generation completed successfully!")
+        print(f"[OK] Reports generated: {result['reports_generated']}")
+        print(f"[OK] Reports compiled: {result['reports_successful']}")
+        print(f"[OK] Visualizations created: {result['visualizations_generated']}")
+        print(f"[OK] Executive summary: {result['summary']}")
+        print(f"[OK] Package manifest: {result['manifest']}")
 
         print(f"\nAll files saved to: {generator.output_dir}")
         print("PDF reports available in: pdf_reports/")
 
     else:
-        print(f"✗ Package generation failed: {result['error']}")
+        print(f"[X] Package generation failed: {result['error']}")
         if 'traceback' in result:
             print(f"\nError details:\n{result['traceback']}")
 

@@ -1,0 +1,133 @@
+{
+  "api_access": true,
+  "provider_results": {
+    "Japan": [
+      {
+        "provider": "BOJ",
+        "datasets": 0,
+        "accessible": true
+      },
+      {
+        "provider": "JPN",
+        "datasets": 0,
+        "accessible": false
+      }
+    ],
+    "Canada": [
+      {
+        "provider": "STATCAN",
+        "datasets": 0,
+        "accessible": true
+      },
+      {
+        "provider": "BIS",
+        "datasets": 0,
+        "accessible": true
+      }
+    ],
+    "France": [
+      {
+        "provider": "INSEE",
+        "datasets": 0,
+        "accessible": true
+      },
+      {
+        "provider": "ECB",
+        "datasets": 0,
+        "accessible": true
+      },
+      {
+        "provider": "BIS",
+        "datasets": 0,
+        "accessible": true
+      }
+    ],
+    "Italy": [
+      {
+        "provider": "ISTAT",
+        "datasets": 0,
+        "accessible": true
+      },
+      {
+        "provider": "ECB",
+        "datasets": 0,
+        "accessible": true
+      },
+      {
+        "provider": "BIS",
+        "datasets": 0,
+        "accessible": true
+      }
+    ],
+    "China": [
+      {
+        "provider": "BIS",
+        "datasets": 0,
+        "accessible": true
+      },
+      {
+        "provider": "IMF",
+        "datasets": 0,
+        "accessible": true
+      }
+    ],
+    "India": [
+      {
+        "provider": "BIS",
+        "datasets": 0,
+        "accessible": true
+      },
+      {
+        "provider": "IMF",
+        "datasets": 0,
+        "accessible": true
+      },
+      {
+        "provider": "WEO",
+        "datasets": 0,
+        "accessible": false
+      }
+    ],
+    "Brazil": [
+      {
+        "provider": "BCB",
+        "datasets": 0,
+        "accessible": true
+      },
+      {
+        "provider": "BIS",
+        "datasets": 0,
+        "accessible": true
+      },
+      {
+        "provider": "IMF",
+        "datasets": 0,
+        "accessible": true
+      }
+    ]
+  },
+  "dataset_results": {
+    "Japan": {
+      "success": false,
+      "error": "HTTP 400"
+    },
+    "Canada": {
+      "success": false,
+      "error": "HTTP 400"
+    },
+    "France": {
+      "success": false,
+      "error": "HTTP 400"
+    },
+    "Italy": {
+      "success": false,
+      "error": "HTTP 400"
+    },
+    "Brazil": {
+      "success": false,
+      "error": "HTTP 400"
+    }
+  },
+  "collector_functionality": false,
+  "success_rate": 121.42857142857142
+}

@@ -21,8 +21,8 @@ def main():
 
     # Initialize data source loader
     loader = EnhancedDataLoader()
-    print(f"✓ data source loader initialized")
-    print(f"✓ FRED categories available: {len(loader.fred_categories)}")
+    print(f"[OK] data source loader initialized")
+    print(f"[OK] FRED categories available: {len(loader.fred_categories)}")
 
     # Test data loading
     print("\n=== Data Loading Results ===")
@@ -37,9 +37,9 @@ def main():
             obs_count = len(df)
             total_observations += obs_count
             datasets_loaded += 1
-            print(f"✓ {category}: {obs_count:,} observations")
+            print(f"[OK] {category}: {obs_count:,} observations")
         except Exception as e:
-            print(f"✗ {category}: {e}")
+            print(f"[X] {category}: {e}")
 
     # Test Census data
     try:
@@ -47,9 +47,9 @@ def main():
         if not census_data.empty:
             total_observations += len(census_data)
             datasets_loaded += 1
-            print(f"✓ Census regional: {len(census_data)} observations")
+            print(f"[OK] Census regional: {len(census_data)} observations")
     except Exception as e:
-        print(f"✗ Census: {e}")
+        print(f"[X] Census: {e}")
 
     # Test financial markets
     try:
@@ -57,9 +57,9 @@ def main():
         if not financial_data.empty:
             total_observations += len(financial_data)
             datasets_loaded += 1
-            print(f"✓ Financial markets: {len(financial_data)} observations")
+            print(f"[OK] Financial markets: {len(financial_data)} observations")
     except Exception as e:
-        print(f"✗ Financial markets: {e}")
+        print(f"[X] Financial markets: {e}")
 
     # Test OECD data
     try:
@@ -68,9 +68,9 @@ def main():
             oecd_data = pd.read_csv(oecd_file)
             total_observations += len(oecd_data)
             datasets_loaded += 1
-            print(f"✓ OECD quarterly: {len(oecd_data):,} observations, {oecd_data['country'].nunique()} countries")
+            print(f"[OK] OECD quarterly: {len(oecd_data):,} observations, {oecd_data['country'].nunique()} countries")
     except Exception as e:
-        print(f"✗ OECD: {e}")
+        print(f"[X] OECD: {e}")
 
     # Calculate impact
     original_obs = 116000  # Original Lewis platform
@@ -88,7 +88,7 @@ def main():
     try:
         trade_dataset = loader.create_international_trade_dataset()
         if not trade_dataset.empty:
-            print(f"✓ Enhanced trade dataset: {len(trade_dataset)} observations")
+            print(f"[OK] Enhanced trade dataset: {len(trade_dataset)} observations")
 
             # Export
             output_path = loader.export_to_lewis_output(
@@ -96,20 +96,20 @@ def main():
                 "enhanced_comprehensive_trade_dataset",
                 "ENHANCED_PLATFORM"
             )
-            print(f"✓ Exported to: {output_path}")
+            print(f"[OK] Exported to: {output_path}")
         else:
-            print("✗ No trade dataset created")
+            print("[X] No trade dataset created")
     except Exception as e:
-        print(f"✗ Trade dataset creation failed: {e}")
+        print(f"[X] Trade dataset creation failed: {e}")
 
     # Summary report
     print(f"\n=== SUCCESS SUMMARY ===")
-    print("✓ data source FRED database integrated (15 categories)")
-    print("✓ Census regional data available")
-    print("✓ Financial markets data available")
-    print("✓ OECD quarterly data available (11 countries)")
-    print("✓ Enhanced trade dataset created")
-    print("✓ Data export functionality working")
+    print("[OK] data source FRED database integrated (15 categories)")
+    print("[OK] Census regional data available")
+    print("[OK] Financial markets data available")
+    print("[OK] OECD quarterly data available (11 countries)")
+    print("[OK] Enhanced trade dataset created")
+    print("[OK] Data export functionality working")
 
     print(f"\n=== Platform Transformation ===")
     print(f"BEFORE: Lewis platform with {original_obs:,} observations")
@@ -117,13 +117,13 @@ def main():
     print(f"IMPROVEMENT: {expansion_factor:.1f}x data expansion")
 
     print(f"\n=== Ready for Next Phases ===")
-    print("✓ Phase 1.1: Extended FRED integration - COMPLETE")
-    print("✓ Phase 1.1: Census regional data - COMPLETE")
-    print("✓ Phase 1.1: Financial markets data - COMPLETE")
-    print("✓ Phase 1.2: OECD data (11/38 countries) - PARTIAL")
-    print("→ Ready for Phase 2: Advanced Analytics")
-    print("→ Ready for Phase 3: Interactive Dashboard")
-    print("→ Ready for Phase 4: Performance Optimization")
+    print("[OK] Phase 1.1: Extended FRED integration - COMPLETE")
+    print("[OK] Phase 1.1: Census regional data - COMPLETE")
+    print("[OK] Phase 1.1: Financial markets data - COMPLETE")
+    print("[OK] Phase 1.2: OECD data (11/38 countries) - PARTIAL")
+    print("-> Ready for Phase 2: Advanced Analytics")
+    print("-> Ready for Phase 3: Interactive Dashboard")
+    print("-> Ready for Phase 4: Performance Optimization")
 
     return {
         'success': True,

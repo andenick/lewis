@@ -212,20 +212,20 @@ def test_advanced_forecasting():
         print(f"Worst Case Drawdown: {risk_metrics.get('max_drawdown_worst', 0):.2%}")
 
     print(f"\n=== Test Results ===")
-    print("✓ Advanced forecasting models working")
-    print("✓ Monte Carlo simulation operational")
-    print("✓ Risk metrics calculation working")
-    print("✓ Ensemble forecasting working")
-    print("✓ Backtesting framework working")
-    print("✓ Scenario analysis working")
-    print("✓ Results export working")
+    print("[OK] Advanced forecasting models working")
+    print("[OK] Monte Carlo simulation operational")
+    print("[OK] Risk metrics calculation working")
+    print("[OK] Ensemble forecasting working")
+    print("[OK] Backtesting framework working")
+    print("[OK] Scenario analysis working")
+    print("[OK] Results export working")
 
     return True
 
 if __name__ == "__main__":
     success = test_advanced_forecasting()
     if success:
-        print(f"\n🎉 ADVANCED FORECASTING SYSTEM SUCCESSFULLY INTEGRATED!")
+        print(f"\nADVANCED FORECASTING SYSTEM SUCCESSFULLY INTEGRATED!")
         print("The enhanced Lewis platform now has sophisticated forecasting capabilities!")
     else:
-        print(f"\n❌ Advanced forecasting integration failed")
+        print(f"\n[X] Advanced forecasting integration failed")

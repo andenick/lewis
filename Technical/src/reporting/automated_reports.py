@@ -1121,13 +1121,13 @@ def main():
     results = reporter.generate_comprehensive_report(config, sample_data)
 
     if results.success:
-        print("✓ Report generated successfully!")
+        print("[OK] Report generated successfully!")
         print(f"  Generation time: {results.generation_time:.2f} seconds")
         print(f"  Output formats: {results.metadata['formats']}")
         for format_type, path in results.report_paths.items():
             print(f"  {format_type.upper()}: {path}")
     else:
-        print("✗ Report generation failed!")
+        print("[X] Report generation failed!")
         for error in results.errors:
             print(f"  Error: {error}")
 

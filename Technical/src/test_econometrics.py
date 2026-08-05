@@ -144,20 +144,20 @@ def test_econometrics():
         print(f"Comprehensive analysis failed: {e}")
 
     print(f"\n=== Test Results ===")
-    print("✓ Advanced econometrics module working")
-    print("✓ Unit root testing operational")
-    print("✓ Cointegration analysis operational")
-    print("✓ Granger causality testing operational")
-    print("✓ VAR modeling operational")
-    print("✓ Comprehensive analysis framework working")
-    print("✓ Report generation working")
+    print("[OK] Advanced econometrics module working")
+    print("[OK] Unit root testing operational")
+    print("[OK] Cointegration analysis operational")
+    print("[OK] Granger causality testing operational")
+    print("[OK] VAR modeling operational")
+    print("[OK] Comprehensive analysis framework working")
+    print("[OK] Report generation working")
 
     return True
 
 if __name__ == "__main__":
     success = test_econometrics()
     if success:
-        print(f"\n🎉 ADVANCED ECONOMETRICS MODULE SUCCESSFULLY INTEGRATED!")
+        print(f"\nADVANCED ECONOMETRICS MODULE SUCCESSFULLY INTEGRATED!")
         print("The enhanced Lewis platform now supports sophisticated econometric analysis!")
     else:
-        print(f"\n❌ Econometrics module integration failed")
+        print(f"\n[X] Econometrics module integration failed")

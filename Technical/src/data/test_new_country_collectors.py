@@ -51,7 +51,7 @@ def test_japan_collector():
     print("="*60)
 
     if not JAPAN_AVAILABLE:
-        print("❌ Japan collector not available for testing")
+        print("[X] Japan collector not available for testing")
         return False
 
     try:
@@ -72,30 +72,30 @@ def test_japan_collector():
         print("\n2. Sample Data Generation:")
         sample_df = collector.generate_sample_data()
         if not sample_df.empty:
-            print(f"✅ Generated {len(sample_df)} sample records")
-            print(f"✅ Years covered: {sample_df['year'].min()}-{sample_df['year'].max()}")
-            print(f"✅ Indicators: {sample_df['indicator'].nunique()}")
-            print(f"✅ Data source: {sample_df['data_source'].iloc[0]}")
+            print(f"[OK] Generated {len(sample_df)} sample records")
+            print(f"[OK] Years covered: {sample_df['year'].min()}-{sample_df['year'].max()}")
+            print(f"[OK] Indicators: {sample_df['indicator'].nunique()}")
+            print(f"[OK] Data source: {sample_df['data_source'].iloc[0]}")
         else:
-            print("❌ Sample data generation failed")
+            print("[X] Sample data generation failed")
             all_passed = False
 
         # Test data collection (without actual API calls)
         print("\n3. Data Collection Framework:")
-        print("✅ Framework ready for e-Stat API integration")
-        print("✅ Framework ready for Bank of Japan API integration")
-        print("⚠️  Note: Actual API calls require e-Stat app ID configuration")
+        print("[OK] Framework ready for e-Stat API integration")
+        print("[OK] Framework ready for Bank of Japan API integration")
+        print("[!] Note: Actual API calls require e-Stat app ID configuration")
 
         # Show summary of indicators
         print(f"\n4. Indicator Coverage:")
-        print(f"✅ e-Stat indicators: {len(collector.indicator_codes)}")
-        print(f"✅ BOJ series: {len(collector.boj_series)}")
-        print(f"✅ Prefecture codes: {len(collector.prefecture_codes)}")
+        print(f"[OK] e-Stat indicators: {len(collector.indicator_codes)}")
+        print(f"[OK] BOJ series: {len(collector.boj_series)}")
+        print(f"[OK] Prefecture codes: {len(collector.prefecture_codes)}")
 
         return all_passed
 
     except Exception as e:
-        print(f"❌ Japan collector test failed with error: {e}")
+        print(f"[X] Japan collector test failed with error: {e}")
         return False
 
 def test_canada_collector():
@@ -105,7 +105,7 @@ def test_canada_collector():
     print("="*60)
 
     if not CANADA_AVAILABLE:
-        print("❌ Canada collector not available for testing")
+        print("[X] Canada collector not available for testing")
         return False
 
     try:
@@ -126,30 +126,30 @@ def test_canada_collector():
         print("\n2. Sample Data Generation:")
         sample_df = collector.generate_sample_data()
         if not sample_df.empty:
-            print(f"✅ Generated {len(sample_df)} sample records")
-            print(f"✅ Years covered: {sample_df['year'].min()}-{sample_df['year'].max()}")
-            print(f"✅ Indicators: {sample_df['indicator'].nunique()}")
-            print(f"✅ Data source: {sample_df['data_source'].iloc[0]}")
+            print(f"[OK] Generated {len(sample_df)} sample records")
+            print(f"[OK] Years covered: {sample_df['year'].min()}-{sample_df['year'].max()}")
+            print(f"[OK] Indicators: {sample_df['indicator'].nunique()}")
+            print(f"[OK] Data source: {sample_df['data_source'].iloc[0]}")
         else:
-            print("❌ Sample data generation failed")
+            print("[X] Sample data generation failed")
             all_passed = False
 
         # Test data collection framework
         print("\n3. Data Collection Framework:")
-        print("✅ Statistics Canada API ready (no authentication required)")
-        print("✅ Bank of Canada API ready (no authentication required)")
-        print("✅ Open APIs - ready for immediate data collection")
+        print("[OK] Statistics Canada API ready (no authentication required)")
+        print("[OK] Bank of Canada API ready (no authentication required)")
+        print("[OK] Open APIs - ready for immediate data collection")
 
         # Show summary of indicators
         print(f"\n4. Indicator Coverage:")
-        print(f"✅ Statistics Canada tables: {len(collector.statscan_tables)}")
-        print(f"✅ Bank of Canada series: {len(collector.boc_series)}")
-        print(f"✅ Province codes: {len(collector.province_codes)}")
+        print(f"[OK] Statistics Canada tables: {len(collector.statscan_tables)}")
+        print(f"[OK] Bank of Canada series: {len(collector.boc_series)}")
+        print(f"[OK] Province codes: {len(collector.province_codes)}")
 
         return all_passed
 
     except Exception as e:
-        print(f"❌ Canada collector test failed with error: {e}")
+        print(f"[X] Canada collector test failed with error: {e}")
         return False
 
 def test_france_collector():
@@ -159,7 +159,7 @@ def test_france_collector():
     print("="*60)
 
     if not FRANCE_AVAILABLE:
-        print("❌ France collector not available for testing")
+        print("[X] France collector not available for testing")
         return False
 
     try:
@@ -180,31 +180,31 @@ def test_france_collector():
         print("\n2. Sample Data Generation:")
         sample_df = collector.generate_sample_data()
         if not sample_df.empty:
-            print(f"✅ Generated {len(sample_df)} sample records")
-            print(f"✅ Years covered: {sample_df['year'].min()}-{sample_df['year'].max()}")
-            print(f"✅ Indicators: {sample_df['indicator'].nunique()}")
-            print(f"✅ Data source: {sample_df['data_source'].iloc[0]}")
+            print(f"[OK] Generated {len(sample_df)} sample records")
+            print(f"[OK] Years covered: {sample_df['year'].min()}-{sample_df['year'].max()}")
+            print(f"[OK] Indicators: {sample_df['indicator'].nunique()}")
+            print(f"[OK] Data source: {sample_df['data_source'].iloc[0]}")
         else:
-            print("❌ Sample data generation failed")
+            print("[X] Sample data generation failed")
             all_passed = False
 
         # Test data collection framework
         print("\n3. Data Collection Framework:")
-        print("✅ INSEE API framework ready (requires authentication token)")
-        print("✅ Banque de France API ready (open access)")
-        print("✅ DBnomics integration ready")
-        print("⚠️  Note: INSEE requires API token configuration")
+        print("[OK] INSEE API framework ready (requires authentication token)")
+        print("[OK] Banque de France API ready (open access)")
+        print("[OK] DBnomics integration ready")
+        print("[!] Note: INSEE requires API token configuration")
 
         # Show summary of indicators
         print(f"\n4. Indicator Coverage:")
-        print(f"✅ INSEE datasets: {len(collector.insee_datasets)}")
-        print(f"✅ Banque de France series: {len(collector.bdf_series)}")
-        print(f"✅ Regional codes: {len(collector.regional_codes)}")
+        print(f"[OK] INSEE datasets: {len(collector.insee_datasets)}")
+        print(f"[OK] Banque de France series: {len(collector.bdf_series)}")
+        print(f"[OK] Regional codes: {len(collector.regional_codes)}")
 
         return all_passed
 
     except Exception as e:
-        print(f"❌ France collector test failed with error: {e}")
+        print(f"[X] France collector test failed with error: {e}")
         return False
 
 def create_unified_test_summary():
@@ -234,11 +234,11 @@ def create_unified_test_summary():
                 if 'country' not in sample_df.columns:
                     sample_df['country'] = country
                 all_sample_data.append(sample_df)
-                print(f"✅ Added {len(sample_df)} records for {country}")
+                print(f"[OK] Added {len(sample_df)} records for {country}")
             else:
-                print(f"⚠️  No sample data for {country}")
+                print(f"[!] No sample data for {country}")
         except Exception as e:
-            print(f"❌ Error processing {country}: {e}")
+            print(f"[X] Error processing {country}: {e}")
 
     # Combine all sample data
     if all_sample_data:
@@ -251,7 +251,7 @@ def create_unified_test_summary():
         summary_file = output_dir / "new_countries_sample_summary.csv"
         unified_df.to_csv(summary_file, index=False)
 
-        print(f"\n✅ Unified summary created:")
+        print(f"\n[OK] Unified summary created:")
         print(f"  - Total records: {len(unified_df):,}")
         print(f"  - Countries: {unified_df['country'].nunique()}")
         print(f"  - Years: {unified_df['year'].min()}-{unified_df['year'].max()}")
@@ -266,7 +266,7 @@ def create_unified_test_summary():
 
         return True
     else:
-        print("❌ No sample data collected")
+        print("[X] No sample data collected")
         return False
 
 def generate_status_report():
@@ -282,28 +282,28 @@ def generate_status_report():
         'France': FRANCE_AVAILABLE
     }
 
-    print(f"\n📊 IMPLEMENTATION STATUS:")
+    print(f"\nIMPLEMENTATION STATUS:")
     print(f"  - Total countries planned: 7")
     print(f"  - Countries implemented: {sum(results.values())}")
     print(f"  - Countries remaining: {7 - sum(results.values())}")
 
-    print(f"\n📋 CURRENT IMPLEMENTATION:")
+    print(f"\nCURRENT IMPLEMENTATION:")
     for country, status in results.items():
-        emoji = "✅" if status else "❌"
+        emoji = "[OK]" if status else "[X]"
         print(f"  {emoji} {country}: {'Implemented' if status else 'Not Implemented'}")
 
-    print(f"\n🎯 NEXT STEPS:")
+    print(f"\nNEXT STEPS:")
     if sum(results.values()) == 3:
-        print("  ✅ First 3 collectors complete (Japan, Canada, France)")
-        print("  📝 Remaining collectors to implement:")
+        print("  [OK] First 3 collectors complete (Japan, Canada, France)")
+        print("  Remaining collectors to implement:")
         print("     - Italy (ISTAT + Banca d'Italia)")
         print("     - China (NBS + People's Bank of China)")
         print("     - India (RBI DBIE + Ministry of Statistics)")
         print("     - Brazil (IBGE + Banco Central do Brasil)")
     else:
-        print("  ⚠️  Some collectors need debugging")
+        print("  [!] Some collectors need debugging")
 
-    print(f"\n🔧 INTEGRATION READINESS:")
+    print(f"\nINTEGRATION READINESS:")
     print("  - Data loader updates needed: Yes")
     print("  - Framework activation needed: Yes")
     print("  - Historical data backfill: Pending")
@@ -348,11 +348,11 @@ def main():
     print(f"Tests Failed: {total_tests - passed_tests}")
 
     if passed_tests == total_tests and total_tests > 0:
-        print("🎉 ALL TESTS PASSED - Country collectors are ready!")
+        print("ALL TESTS PASSED - Country collectors are ready!")
     elif total_tests == 0:
-        print("⚠️  No tests were executed - check imports")
+        print("[!] No tests were executed - check imports")
     else:
-        print("⚠️  Some tests failed - review the detailed results above")
+        print("[!] Some tests failed - review the detailed results above")
 
     print(f"\nNext Steps:")
     print("1. Complete remaining country collectors (Italy, China, India, Brazil)")

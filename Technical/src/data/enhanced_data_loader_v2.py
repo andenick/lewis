@@ -175,9 +175,9 @@ class EnhancedDataLoader:
                 df = self.load_fred_category(category, start_date, end_date)
                 all_data[category] = df
                 total_obs += len(df)
-                logger.info(f"✓ {category}: {len(df)} observations")
+                logger.info(f"[OK] {category}: {len(df)} observations")
             except Exception as e:
-                logger.error(f"✗ Failed to load {category}: {e}")
+                logger.error(f"[X] Failed to load {category}: {e}")
 
         logger.info(f"Loaded total: {total_obs:,} observations across {len(all_data)} categories")
         return all_data
@@ -203,7 +203,7 @@ class EnhancedDataLoader:
                     series_data = trade_df[trade_df['series_id'] == series_id].copy()
                     if not series_data.empty:
                         trade_series.append(series_data)
-                        logger.info(f"✓ Added {series_id}: {len(series_data)} observations")
+                        logger.info(f"[OK] Added {series_id}: {len(series_data)} observations")
         except Exception as e:
             logger.warning(f"Failed to load trade data: {e}")
 
@@ -221,7 +221,7 @@ class EnhancedDataLoader:
                     series_data = df[df['series_id'] == series_id].copy()
                     if not series_data.empty:
                         trade_series.append(series_data)
-                        logger.info(f"✓ Added {series_id} from {category}: {len(series_data)} observations")
+                        logger.info(f"[OK] Added {series_id} from {category}: {len(series_data)} observations")
             except Exception as e:
                 logger.warning(f"Failed to load {category}: {e}")
 

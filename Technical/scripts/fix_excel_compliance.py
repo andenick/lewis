@@ -41,7 +41,7 @@ class ExcelComplianceFixer:
         Returns:
             Dictionary with 'compliant' and 'violations' file lists
         """
-        print("🔍 VALIDATING EXCEL ONE-SHEET COMPLIANCE")
+        print("VALIDATING EXCEL ONE-SHEET COMPLIANCE")
         print("=" * 60)
 
         excel_files = list(self.data_dir.rglob("*.xlsx"))
@@ -55,7 +55,7 @@ class ExcelComplianceFixer:
 
                 if sheet_count == 1:
                     compliant_files.append(str(file_path))
-                    print(f"✅ COMPLIANT: {file_path.name} (1 sheet)")
+                    print(f"[OK] COMPLIANT: {file_path.name} (1 sheet)")
                 else:
                     violating_files.append(str(file_path))
                     self.violations.append({
@@ -63,10 +63,10 @@ class ExcelComplianceFixer:
                         'sheets': xl.sheet_names,
                         'count': sheet_count
                     })
-                    print(f"❌ VIOLATION: {file_path.name} ({sheet_count} sheets: {xl.sheet_names})")
+                    print(f"[X] VIOLATION: {file_path.name} ({sheet_count} sheets: {xl.sheet_names})")
 
             except Exception as e:
-                print(f"⚠️  ERROR reading {file_path.name}: {e}")
+                print(f"[!] ERROR reading {file_path.name}: {e}")
                 violating_files.append(str(file_path))
 
         print("\n" + "=" * 60)
@@ -84,7 +84,7 @@ class ExcelComplianceFixer:
         Returns:
             True if fix was successful
         """
-        print("\n🔧 FIXING: BoP_WBankGDP_NA.xlsx")
+        print("\nFIXING: BoP_WBankGDP_NA.xlsx")
 
         # Find the file
         gdp_file = None
@@ -94,7 +94,7 @@ class ExcelComplianceFixer:
                 break
 
         if not gdp_file:
-            print("❌ BoP_WBankGDP_NA.xlsx not found in violations")
+            print("[X] BoP_WBankGDP_NA.xlsx not found in violations")
             return False
 
         try:
@@ -123,18 +123,18 @@ class ExcelComplianceFixer:
                 # Format the sheet
                 self._format_excel_sheet(output_file)
 
-                print(f"✅ Created: {output_file.name}")
+                print(f"[OK] Created: {output_file.name}")
                 self.fixes_applied.append(f"Split {gdp_file.name} sheet '{sheet_name}' -> {output_file.name}")
 
             # Remove original multi-sheet file
             gdp_file.unlink()
-            print(f"🗑️  Removed original: {gdp_file.name}")
+            print(f"Removed original: {gdp_file.name}")
             self.fixes_applied.append(f"Removed original multi-sheet file: {gdp_file.name}")
 
             return True
 
         except Exception as e:
-            print(f"❌ Error fixing {gdp_file.name}: {e}")
+            print(f"[X] Error fixing {gdp_file.name}: {e}")
             return False
 
     def fix_trade_analysis_file(self) -> bool:
@@ -144,7 +144,7 @@ class ExcelComplianceFixer:
         Returns:
             True if fix was successful
         """
-        print("\n🔧 FIXING: trade_analysis_results.xlsx")
+        print("\nFIXING: trade_analysis_results.xlsx")
 
         # Find the file
         trade_file = None
@@ -154,7 +154,7 @@ class ExcelComplianceFixer:
                 break
 
         if not trade_file:
-            print("❌ trade_analysis_results.xlsx not found in violations")
+            print("[X] trade_analysis_results.xlsx not found in violations")
             return False
 
         try:
@@ -185,18 +185,18 @@ class ExcelComplianceFixer:
                 # Format the sheet
                 self._format_excel_sheet(output_file)
 
-                print(f"✅ Created: {output_file.name}")
+                print(f"[OK] Created: {output_file.name}")
                 self.fixes_applied.append(f"Split {trade_file.name} sheet '{sheet_name}' -> {output_file.name}")
 
             # Remove original multi-sheet file
             trade_file.unlink()
-            print(f"🗑️  Removed original: {trade_file.name}")
+            print(f"Removed original: {trade_file.name}")
             self.fixes_applied.append(f"Removed original multi-sheet file: {trade_file.name}")
 
             return True
 
         except Exception as e:
-            print(f"❌ Error fixing {trade_file.name}: {e}")
+            print(f"[X] Error fixing {trade_file.name}: {e}")
             return False
 
     def _format_excel_sheet(self, file_path: Path):
@@ -236,7 +236,7 @@ class ExcelComplianceFixer:
             wb.save(file_path)
 
         except Exception as e:
-            print(f"⚠️  Warning: Could not format {file_path.name}: {e}")
+            print(f"[!] Warning: Could not format {file_path.name}: {e}")
 
     def run_full_fix(self) -> bool:
         """
@@ -245,14 +245,14 @@ class ExcelComplianceFixer:
         Returns:
             True if all violations were fixed
         """
-        print("🚀 STARTING EXCEL COMPLIANCE FIX PROCESS")
+        print("STARTING EXCEL COMPLIANCE FIX PROCESS")
         print("=" * 60)
 
         # Step 1: Validate all files
         validation_results = self.validate_all_excel_files()
 
         if not validation_results['violations']:
-            print("🎉 ALL FILES COMPLIANT - No fixes needed!")
+            print("ALL FILES COMPLIANT - No fixes needed!")
             return True
 
         # Step 2: Fix specific violations
@@ -269,7 +269,7 @@ class ExcelComplianceFixer:
             fixes_success = fixes_success and success
 
         # Step 3: Re-validate
-        print("\n🔄 RE-VALIDATING AFTER FIXES...")
+        print("\nRE-VALIDATING AFTER FIXES...")
         print("=" * 60)
 
         # Clear violations list and re-validate
@@ -278,18 +278,18 @@ class ExcelComplianceFixer:
 
         # Step 4: Summary
         print("\n" + "=" * 60)
-        print("📊 FIX SUMMARY")
+        print("FIX SUMMARY")
         print("=" * 60)
 
         for fix in self.fixes_applied:
-            print(f"✅ {fix}")
+            print(f"[OK] {fix}")
 
         if not final_results['violations']:
-            print(f"\n🎉 SUCCESS: All {len(validation_results['violations'])} violations fixed!")
-            print(f"✅ {len(final_results['compliant']) + len(validation_results['violations'])} files now compliant")
+            print(f"\nSUCCESS: All {len(validation_results['violations'])} violations fixed!")
+            print(f"[OK] {len(final_results['compliant']) + len(validation_results['violations'])} files now compliant")
             return True
         else:
-            print(f"\n⚠️  PARTIAL SUCCESS: {len(final_results['violations'])} violations remain")
+            print(f"\n[!] PARTIAL SUCCESS: {len(final_results['violations'])} violations remain")
             return False
 
 
@@ -306,9 +306,9 @@ def main():
     success = fixer.run_full_fix()
 
     if success:
-        print("\n🎯 ALL EXCEL FILES NOW MEET THE PROJECT FORMATTING STANDARD!")
+        print("\nALL EXCEL FILES NOW MEET THE PROJECT FORMATTING STANDARD!")
     else:
-        print("\n⚠️  Some issues remain - manual intervention may be needed")
+        print("\n[!] Some issues remain - manual intervention may be needed")
 
     return success
 

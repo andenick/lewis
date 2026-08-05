@@ -869,7 +869,7 @@ Strategic policy recommendations include:
 
 9.1 Statistical Methods
 Statistical techniques employed:
-- Time series decomposition using HP filtering (λ=1600)
+- Time series decomposition using HP filtering (lambda=1600)
 - Structural break testing using Bai-Perron methodology
 - Johansen cointegration procedure for long-run relationships
 - Markov regime-switching models for cycle analysis
@@ -2549,7 +2549,7 @@ DATA QUALITY ASSESSMENT:
 - Validation: Statistical procedures applied consistently
 
 ANALYTICAL METHODS:
-- Time series decomposition using HP filtering (λ=1600)
+- Time series decomposition using HP filtering (lambda=1600)
 - Structural break testing using Bai-Perron methodology
 - Cointegration analysis using Johansen procedure
 - Vector autoregression (VAR) for sectoral interdependencies

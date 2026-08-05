@@ -163,7 +163,7 @@ class CapitalFlowsReportGenerator:
                 'total_processing_time': results.generation_time
             })
 
-            logger.info(f"✓ Report generation completed successfully in {results.generation_time:.2f} seconds")
+            logger.info(f"[OK] Report generation completed successfully in {results.generation_time:.2f} seconds")
             logger.info(f"Generated {len(results.generated_files)} LaTeX files")
             logger.info(f"Compiled {sum(results.compilation_results.values())} PDF files")
 
@@ -199,7 +199,7 @@ class CapitalFlowsReportGenerator:
             with open(data_file, 'w') as f:
                 json.dump(data_summary, f, indent=2, default=str)
 
-            logger.info(f"✓ Data integration completed: {data_summary}")
+            logger.info(f"[OK] Data integration completed: {data_summary}")
             return integrated_data
 
         except Exception as e:
@@ -250,7 +250,7 @@ class CapitalFlowsReportGenerator:
             with open(results_file, 'w') as f:
                 json.dump(analysis_summary, f, indent=2, default=str)
 
-            logger.info(f"✓ Econometric analysis completed: {analysis_summary}")
+            logger.info(f"[OK] Econometric analysis completed: {analysis_summary}")
             return analysis_results
 
         except Exception as e:
@@ -279,7 +279,7 @@ class CapitalFlowsReportGenerator:
                 config, integrated_data, analysis_results, self.output_dir
             )
 
-            logger.info(f"✓ Generated {len(latex_files)} LaTeX reports")
+            logger.info(f"[OK] Generated {len(latex_files)} LaTeX reports")
             return latex_files
 
         except Exception as e:
@@ -296,9 +296,9 @@ class CapitalFlowsReportGenerator:
                 compilation_results[report_name] = success
 
                 if success:
-                    logger.info(f"✓ Compiled PDF: {report_name}")
+                    logger.info(f"[OK] Compiled PDF: {report_name}")
                 else:
-                    logger.warning(f"✗ Failed to compile PDF: {report_name}")
+                    logger.warning(f"[X] Failed to compile PDF: {report_name}")
 
             except Exception as e:
                 logger.error(f"PDF compilation error for {report_name}: {e}")
@@ -362,7 +362,7 @@ class CapitalFlowsReportGenerator:
             with open(summary_file, 'w', encoding='utf-8') as f:
                 f.write(summary_content)
 
-            logger.info(f"✓ Executive summary created: {summary_file}")
+            logger.info(f"[OK] Executive summary created: {summary_file}")
 
         except Exception as e:
             logger.error(f"Executive summary creation failed: {e}")
@@ -496,7 +496,7 @@ comprehensive technical reports included in this analysis package.
             with open(qa_file, 'w') as f:
                 json.dump(qa_results, f, indent=2, default=str)
 
-            logger.info("✓ Quality assurance completed")
+            logger.info("[OK] Quality assurance completed")
 
         except Exception as e:
             logger.error(f"Quality assurance failed: {e}")
@@ -615,7 +615,7 @@ Warnings: {len(results.warnings)}
             with open(summary_file, 'w', encoding='utf-8') as f:
                 f.write(summary_content)
 
-            logger.info(f"✓ Generation summary created: {summary_file}")
+            logger.info(f"[OK] Generation summary created: {summary_file}")
 
         except Exception as e:
             logger.error(f"Summary report generation failed: {e}")
@@ -628,7 +628,7 @@ Warnings: {len(results.warnings)}
         for report_name in sorted(generated_files.keys()):
             latex_path = generated_files[report_name]
             compiled = compilation_results.get(report_name, False)
-            status = "✓ PDF" if compiled else "✗ LaTeX only"
+            status = "[OK] PDF" if compiled else "[X] LaTeX only"
             breakdown += f"{report_name}: {status}\n"
 
         return breakdown

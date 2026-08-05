@@ -111,7 +111,7 @@ class CapitalFlowsDataIntegrator:
             bop_data, fdi_data, portfolio_data, banking_data, macro_data, crisis_periods
         )
 
-        logger.info("✓ Capital flows data integration completed successfully")
+        logger.info("[OK] Capital flows data integration completed successfully")
         return integrated_data
 
     def _load_bop_data(self) -> pd.DataFrame:
@@ -139,12 +139,12 @@ class CapitalFlowsDataIntegrator:
                 logger.warning("No BOP data found in the data store collection, using synthetic data...")
                 bop_data = self._create_synthetic_bop_data()
             else:
-                logger.info(f"✓ Real BOP data collected: {len(bop_data)} observations")
+                logger.info(f"[OK] Real BOP data collected: {len(bop_data)} observations")
 
             # Standardize structure
             bop_data = self._standardize_bop_structure(bop_data)
 
-            logger.info(f"✓ BOP data loaded: {len(bop_data)} observations")
+            logger.info(f"[OK] BOP data loaded: {len(bop_data)} observations")
             return bop_data
 
         except Exception as e:
@@ -177,12 +177,12 @@ class CapitalFlowsDataIntegrator:
                 logger.warning("No FDI data found in the data store collection, using synthetic data...")
                 fdi_data = self._create_synthetic_fdi_data()
             else:
-                logger.info(f"✓ Real FDI data collected: {len(fdi_data)} observations")
+                logger.info(f"[OK] Real FDI data collected: {len(fdi_data)} observations")
 
             # Standardize structure
             fdi_data = self._standardize_fdi_structure(fdi_data)
 
-            logger.info(f"✓ FDI data loaded: {len(fdi_data)} observations")
+            logger.info(f"[OK] FDI data loaded: {len(fdi_data)} observations")
             return fdi_data
 
         except Exception as e:
@@ -207,7 +207,7 @@ class CapitalFlowsDataIntegrator:
             # Standardize structure
             portfolio_data = self._standardize_portfolio_structure(portfolio_data)
 
-            logger.info(f"✓ Portfolio data loaded: {len(portfolio_data)} observations")
+            logger.info(f"[OK] Portfolio data loaded: {len(portfolio_data)} observations")
             return portfolio_data
 
         except Exception as e:
@@ -227,7 +227,7 @@ class CapitalFlowsDataIntegrator:
             # In production, this would load from BIS banking statistics
             banking_data = self._create_synthetic_banking_data()
 
-            logger.info(f"✓ Banking data loaded: {len(banking_data)} observations")
+            logger.info(f"[OK] Banking data loaded: {len(banking_data)} observations")
             return banking_data
 
         except Exception as e:
@@ -259,12 +259,12 @@ class CapitalFlowsDataIntegrator:
                 logger.warning("No macro data found in the data store collection, using synthetic data...")
                 macro_data = self._create_synthetic_macro_data()
             else:
-                logger.info(f"✓ Real macro data collected: {len(macro_data)} observations")
+                logger.info(f"[OK] Real macro data collected: {len(macro_data)} observations")
 
             # Standardize to quarterly frequency
             macro_data = self._standardize_macro_frequency(macro_data)
 
-            logger.info(f"✓ Macro data loaded: {len(macro_data)} observations")
+            logger.info(f"[OK] Macro data loaded: {len(macro_data)} observations")
             return macro_data
 
         except Exception as e:
@@ -362,7 +362,7 @@ class CapitalFlowsDataIntegrator:
         crisis_data['start_date'] = pd.to_datetime(crisis_data['start_date'])
         crisis_data['end_date'] = pd.to_datetime(crisis_data['end_date'])
 
-        logger.info(f"✓ Crisis periods identified: {len(crisis_data)} major crises")
+        logger.info(f"[OK] Crisis periods identified: {len(crisis_data)} major crises")
         return crisis_data
 
     def _harmonize_datasets(self, bop_data, fdi_data, portfolio_data,
@@ -420,7 +420,7 @@ class CapitalFlowsDataIntegrator:
             )
         }
 
-        logger.info("✓ Dataset harmonization completed")
+        logger.info("[OK] Dataset harmonization completed")
         return IntegratedDataset(
             bop_data=bop_data,
             fdi_data=fdi_data,

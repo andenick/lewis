@@ -337,7 +337,7 @@ provenance notes.
 - Cached data access (no API key required)
 - Cross-project integration (BoP + FoF combined)
 - Enhanced error handling and logging
-- Windows encoding compatibility
+- Windows encoding compatibility (ASCII console output — see Code Quality below)
 
 ### Code Statistics
 
@@ -450,12 +450,22 @@ provenance notes.
 - Type hints throughout
 - Comprehensive docstrings
 - Error handling for missing data
-- Windows encoding: many scripts print Unicode status glyphs (`✓`, `✗`, `•`, box-drawing),
-  which a stock Windows console cannot encode under cp1252. Run them with UTF-8 stdout —
-  `set PYTHONUTF8=1` (or `PYTHONIOENCODING=utf-8`) — otherwise they raise
-  `UnicodeEncodeError` mid-run. `src/data/test_data_discovery.py` additionally
-  reconfigures its own stdout and degrades to ASCII markers, so it runs on stock
-  Windows defaults with no environment set.
+- Windows encoding: the scripts run on stock Windows encodings with no environment
+  variables set. Console and log output is ASCII — status markers are written `[OK]`,
+  `[X]` and `[!]`, arrows `->`, and directory diagrams with `+--` — so nothing raises
+  `UnicodeEncodeError` when stdout is a cp1252 console or a redirected pipe.
+  123 of the 125 tracked modules encode cleanly to cp1252, with two deliberate
+  exceptions:
+  - `src/data/test_data_discovery.py` still spells its markers `✓`/`✗`, but it
+    reconfigures its own stdout to UTF-8 and degrades to ASCII when the stream cannot
+    take them, so it also runs to completion on stock defaults.
+  - `src/data/france_collector.py` carries CJK characters inside a DBnomics dataset
+    identifier (`GDP-M季度`). That string is request data, not decoration, so it is left
+    exactly as the API expects it; it can still raise `UnicodeEncodeError` if that one
+    collector logs the dataset name to a cp1252 stream.
+
+  Accented characters in source and place names (`é`, `ô`, `ã`, …) are kept as-is
+  throughout — cp1252 encodes them, so they are not an encoding hazard.
 
 ### Visualization Quality ✅
 - Proper axis labels and titles

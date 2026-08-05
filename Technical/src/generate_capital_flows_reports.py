@@ -124,7 +124,7 @@ def main():
 
             for report_type, path in results.generated_files.items():
                 description = report_descriptions.get(report_type, report_type)
-                pdf_status = "✓ PDF" if results.compilation_results.get(report_type, False) else "✗ LaTeX"
+                pdf_status = "[OK] PDF" if results.compilation_results.get(report_type, False) else "[X] LaTeX"
                 print(f"• {description}")
                 print(f"  File: {path}")
                 print(f"  Status: {pdf_status}")
@@ -158,7 +158,7 @@ def main():
         print("-" * 15)
 
         if results.success:
-            print("✓ All reports generated successfully!")
+            print("[OK] All reports generated successfully!")
             print()
             print("To compile PDF reports:")
             print("1. Ensure LaTeX (pdflatex) is installed on your system")
@@ -178,7 +178,7 @@ def main():
             print("• International economic research")
 
         else:
-            print("✗ Report generation encountered errors")
+            print("[X] Report generation encountered errors")
             print("Please check the error messages above and the log file")
             print("Log file: capital_flows_report_generation.log")
             print()
@@ -195,12 +195,12 @@ def main():
         return results.success
 
     except KeyboardInterrupt:
-        print("\n\n⚠ Report generation interrupted by user")
+        print("\n\n[!] Report generation interrupted by user")
         logger.info("Report generation interrupted by user")
         return False
 
     except Exception as e:
-        print(f"\n\n❌ Report generation failed: {e}")
+        print(f"\n\n[X] Report generation failed: {e}")
         logger.error(f"Report generation failed: {e}", exc_info=True)
         return False
 

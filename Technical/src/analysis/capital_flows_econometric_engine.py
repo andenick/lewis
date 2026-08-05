@@ -144,7 +144,7 @@ class AdvancedCapitalFlowsEconometricEngine:
         # Perform diagnostic tests
         diagnostics = self._perform_diagnostics(results, scaled_data)
 
-        logger.info(f"✓ {model_type} analysis completed successfully")
+        logger.info(f"[OK] {model_type} analysis completed successfully")
 
         return EconometricResults(
             model_type=model_type,
@@ -197,7 +197,7 @@ class AdvancedCapitalFlowsEconometricEngine:
         # Confidence intervals for break dates
         confidence_intervals = self._break_confidence_intervals(clean_data, break_dates)
 
-        logger.info(f"✓ Detected {len(break_dates)} structural breaks")
+        logger.info(f"[OK] Detected {len(break_dates)} structural breaks")
 
         return StructuralBreakResults(
             break_dates=break_dates,
@@ -244,7 +244,7 @@ class AdvancedCapitalFlowsEconometricEngine:
         # Weak exogeneity tests
         weak_exogeneity = self._weak_exogeneity_tests(model_data, cointegration_results)
 
-        logger.info(f"✓ Cointegration rank: {cointegration_results['rank']}")
+        logger.info(f"[OK] Cointegration rank: {cointegration_results['rank']}")
 
         return CointegrationResults(
             cointegration_rank=cointegration_results['rank'],
@@ -299,7 +299,7 @@ class AdvancedCapitalFlowsEconometricEngine:
             data, crisis_periods, variables
         )
 
-        logger.info("✓ Crisis transmission analysis completed")
+        logger.info("[OK] Crisis transmission analysis completed")
 
         return results
 
@@ -347,7 +347,7 @@ class AdvancedCapitalFlowsEconometricEngine:
             data, dependent_var, independent_vars
         )
 
-        logger.info("✓ Multifactor relationship analysis completed")
+        logger.info("[OK] Multifactor relationship analysis completed")
 
         return results
 

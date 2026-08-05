@@ -459,7 +459,7 @@ class AdvancedVisualizationSuite:
                     source=sources,
                     target=targets,
                     value=values,
-                    hovertemplate='%{source.label} → %{target.label}<br>Flow: %{value}<extra></extra>'
+                    hovertemplate='%{source.label} -> %{target.label}<br>Flow: %{value}<extra></extra>'
                 )
             )])
 
@@ -827,14 +827,14 @@ def main():
             network_data, 'source', 'target', 'weight', "International Trade Network"
         )
         viz.save_visualization(network_fig, 'trade_network')
-        print("✓ Network graph created")
+        print("[OK] Network graph created")
 
         # Heatmap
         heatmap_fig = viz.create_advanced_heatmap(
             heatmap_data, 'country', 'metric', 'value', "Economic Indicators Heatmap"
         )
         viz.save_visualization(heatmap_fig, 'economic_heatmap')
-        print("✓ Advanced heatmap created")
+        print("[OK] Advanced heatmap created")
 
         # Animated time series
         animated_fig = viz.create_animated_time_series(
@@ -842,7 +842,7 @@ def main():
             "Economic Indicators Animation"
         )
         viz.save_visualization(animated_fig, 'animated_time_series', ['html'])
-        print("✓ Animated time series created")
+        print("[OK] Animated time series created")
 
         # Radar chart
         radar_data = pd.DataFrame({
@@ -854,14 +854,14 @@ def main():
             radar_data, 'metric', 'score', 'country', "Country Comparison Radar"
         )
         viz.save_visualization(radar_fig, 'radar_comparison')
-        print("✓ Radar chart created")
+        print("[OK] Radar chart created")
 
         # Sankey diagram
         sankey_fig = viz.create_sankey_diagram(
             network_data, 'source', 'target', 'weight', "Trade Flow Sankey"
         )
         viz.save_visualization(sankey_fig, 'trade_sankey')
-        print("✓ Sankey diagram created")
+        print("[OK] Sankey diagram created")
 
         # Dashboard
         dashboard_fig = viz.create_dashboard_layout(
@@ -869,7 +869,7 @@ def main():
             "Lewis Platform Visualization Dashboard"
         )
         viz.save_visualization(dashboard_fig, 'visualization_dashboard')
-        print("✓ Dashboard created")
+        print("[OK] Dashboard created")
 
         print(f"\n*** ALL VISUALIZATIONS CREATED SUCCESSFULLY! ***")
         print(f"Output directory: {viz.output_dir}")

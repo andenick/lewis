@@ -21,9 +21,9 @@ def test_census_integration():
     census_data = loader.load_census_data(sample_size=1000)
 
     if not census_data.empty:
-        print(f"✓ Loaded {len(census_data)} Census observations")
-        print(f"✓ Columns: {list(census_data.columns)}")
-        print(f"✓ Source files: {census_data['source_file'].nunique()} different files")
+        print(f"[OK] Loaded {len(census_data)} Census observations")
+        print(f"[OK] Columns: {list(census_data.columns)}")
+        print(f"[OK] Source files: {census_data['source_file'].nunique()} different files")
 
         # Show sample data
         print("\n2. Sample Census data:")
@@ -36,11 +36,11 @@ def test_census_integration():
             "census_sample_data",
             "CENSUS_REGIONAL"
         )
-        print(f"✓ Exported to: {output_path}")
+        print(f"[OK] Exported to: {output_path}")
 
         return True
     else:
-        print("✗ No Census data found")
+        print("[X] No Census data found")
         return False
 
 def test_financial_markets_integration():
@@ -54,9 +54,9 @@ def test_financial_markets_integration():
     financial_data = loader.load_financial_markets(sample_size=1000)
 
     if not financial_data.empty:
-        print(f"✓ Loaded {len(financial_data)} financial market observations")
-        print(f"✓ Columns: {list(financial_data.columns)}")
-        print(f"✓ Source files: {financial_data['source_file'].nunique()} different files")
+        print(f"[OK] Loaded {len(financial_data)} financial market observations")
+        print(f"[OK] Columns: {list(financial_data.columns)}")
+        print(f"[OK] Source files: {financial_data['source_file'].nunique()} different files")
 
         # Show sample data
         print("\n2. Sample financial markets data:")
@@ -69,11 +69,11 @@ def test_financial_markets_integration():
             "financial_markets_sample",
             "FINANCIAL_MARKETS"
         )
-        print(f"✓ Exported to: {output_path}")
+        print(f"[OK] Exported to: {output_path}")
 
         return True
     else:
-        print("✗ No financial markets data found")
+        print("[X] No financial markets data found")
         return False
 
 if __name__ == "__main__":
@@ -81,5 +81,5 @@ if __name__ == "__main__":
     financial_success = test_financial_markets_integration()
 
     print(f"\n=== Integration Results ===")
-    print(f"Census integration: {'✓ SUCCESS' if census_success else '✗ FAILED'}")
-    print(f"Financial markets integration: {'✓ SUCCESS' if financial_success else '✗ FAILED'}")
+    print(f"Census integration: {'[OK] SUCCESS' if census_success else '[X] FAILED'}")
+    print(f"Financial markets integration: {'[OK] SUCCESS' if financial_success else '[X] FAILED'}")

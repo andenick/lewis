@@ -88,7 +88,7 @@ class CapitalFlowsLaTeXTemplates:
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(latex_content)
 
-        logger.info(f"✓ BOP analysis report generated: {output_file}")
+        logger.info(f"[OK] BOP analysis report generated: {output_file}")
         return str(output_file)
 
     def generate_fdi_patterns_report(self, config: LaTeXReportConfig,
@@ -113,7 +113,7 @@ class CapitalFlowsLaTeXTemplates:
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(latex_content)
 
-        logger.info(f"✓ FDI patterns report generated: {output_file}")
+        logger.info(f"[OK] FDI patterns report generated: {output_file}")
         return str(output_file)
 
     def generate_portfolio_flows_report(self, config: LaTeXReportConfig,
@@ -138,7 +138,7 @@ class CapitalFlowsLaTeXTemplates:
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(latex_content)
 
-        logger.info(f"✓ Portfolio flows report generated: {output_file}")
+        logger.info(f"[OK] Portfolio flows report generated: {output_file}")
         return str(output_file)
 
     def generate_banking_flows_report(self, config: LaTeXReportConfig,
@@ -163,7 +163,7 @@ class CapitalFlowsLaTeXTemplates:
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(latex_content)
 
-        logger.info(f"✓ Banking flows report generated: {output_file}")
+        logger.info(f"[OK] Banking flows report generated: {output_file}")
         return str(output_file)
 
     def generate_crisis_transmission_report(self, config: LaTeXReportConfig,
@@ -188,7 +188,7 @@ class CapitalFlowsLaTeXTemplates:
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(latex_content)
 
-        logger.info(f"✓ Crisis transmission report generated: {output_file}")
+        logger.info(f"[OK] Crisis transmission report generated: {output_file}")
         return str(output_file)
 
     def generate_policy_impact_report(self, config: LaTeXReportConfig,
@@ -213,7 +213,7 @@ class CapitalFlowsLaTeXTemplates:
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(latex_content)
 
-        logger.info(f"✓ Policy impact report generated: {output_file}")
+        logger.info(f"[OK] Policy impact report generated: {output_file}")
         return str(output_file)
 
     # Template generation methods
@@ -1688,7 +1688,7 @@ def generate_all_capital_flows_reports(config: LaTeXReportConfig,
     reports['crisis_transmission'] = template_system.generate_crisis_transmission_report(config, data, analysis_results)
     reports['policy_impact'] = template_system.generate_policy_impact_report(config, data, analysis_results)
 
-    logger.info(f"✓ Generated {len(reports)} capital flows LaTeX reports")
+    logger.info(f"[OK] Generated {len(reports)} capital flows LaTeX reports")
     return reports
 
 if __name__ == "__main__":

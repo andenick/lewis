@@ -79,8 +79,8 @@ class MonteCarloEconomicSimulator:
 
         Args:
             initial_value: Starting value
-            drift: Drift parameter (μ)
-            volatility: Volatility parameter (σ)
+            drift: Drift parameter (mu)
+            volatility: Volatility parameter (sigma)
             time_horizon: Total time to simulate
             n_steps: Number of time steps
             n_simulations: Number of simulation paths
@@ -117,9 +117,9 @@ class MonteCarloEconomicSimulator:
 
         Args:
             initial_value: Starting value
-            long_term_mean: Long-term mean (θ)
-            mean_reversion_speed: Mean reversion speed (κ)
-            volatility: Volatility parameter (σ)
+            long_term_mean: Long-term mean (theta)
+            mean_reversion_speed: Mean reversion speed (kappa)
+            volatility: Volatility parameter (sigma)
             time_horizon: Total time to simulate
             n_steps: Number of time steps
             n_simulations: Number of simulation paths
@@ -159,11 +159,11 @@ class MonteCarloEconomicSimulator:
 
         Args:
             initial_value: Starting value
-            drift: Drift parameter (μ)
-            volatility: Diffusion volatility (σ)
-            jump_intensity: Jump intensity (λ)
-            jump_mean: Jump size mean (μ_J)
-            jump_volatility: Jump size volatility (σ_J)
+            drift: Drift parameter (mu)
+            volatility: Diffusion volatility (sigma)
+            jump_intensity: Jump intensity (lambda)
+            jump_mean: Jump size mean (mu_J)
+            jump_volatility: Jump size volatility (sigma_J)
             time_horizon: Total time to simulate
             n_steps: Number of time steps
             n_simulations: Number of simulation paths

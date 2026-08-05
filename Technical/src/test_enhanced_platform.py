@@ -22,7 +22,7 @@ def test_enhanced_platform():
     source_loader = EnhancedDataLoader()
     fred_loader = FREDLoader()
 
-    print(f"✓ data source loader initialized with {len(source_loader.fred_categories)} FRED categories")
+    print(f"[OK] data source loader initialized with {len(source_loader.fred_categories)} FRED categories")
 
     # Test data loading
     print("\n1. Loading enhanced data...")
@@ -34,27 +34,27 @@ def test_enhanced_platform():
         try:
             df = source_loader.load_fred_category(category)
             data[f'fred_{category}'] = df
-            print(f"✓ FRED {category}: {len(df):,} observations")
+            print(f"[OK] FRED {category}: {len(df):,} observations")
         except Exception as e:
-            print(f"✗ FRED {category}: {e}")
+            print(f"[X] FRED {category}: {e}")
 
     # Load Census data
     try:
         census_data = source_loader.load_census_data(sample_size=1000)
         if not census_data.empty:
             data['census_regional'] = census_data
-            print(f"✓ Census regional: {len(census_data)} observations")
+            print(f"[OK] Census regional: {len(census_data)} observations")
     except Exception as e:
-        print(f"✗ Census: {e}")
+        print(f"[X] Census: {e}")
 
     # Load financial markets
     try:
         financial_data = source_loader.load_financial_markets(sample_size=1000)
         if not financial_data.empty:
             data['financial_markets'] = financial_data
-            print(f"✓ Financial markets: {len(financial_data)} observations")
+            print(f"[OK] Financial markets: {len(financial_data)} observations")
     except Exception as e:
-        print(f"✗ Financial markets: {e}")
+        print(f"[X] Financial markets: {e}")
 
     # Load OECD data
     try:
@@ -62,9 +62,9 @@ def test_enhanced_platform():
         if oecd_file.exists():
             oecd_data = pd.read_csv(oecd_file)
             data['oecd_quarterly'] = oecd_data
-            print(f"✓ OECD quarterly: {len(oecd_data):,} observations, {oecd_data['country'].nunique()} countries")
+            print(f"[OK] OECD quarterly: {len(oecd_data):,} observations, {oecd_data['country'].nunique()} countries")
     except Exception as e:
-        print(f"✗ OECD: {e}")
+        print(f"[X] OECD: {e}")
 
     # Summary statistics
     total_obs = sum(len(df) for df in data.values())
@@ -97,14 +97,14 @@ def test_enhanced_platform():
         if not df.empty:
             output_file = output_dir / f"[{timestamp}] sample_{name}.csv"
             df.head(100).to_csv(output_file, index=False)
-            print(f"✓ Exported sample {name}: {output_file}")
+            print(f"[OK] Exported sample {name}: {output_file}")
 
     print(f"\n=== Test Results ===")
-    print("✓ Enhanced platform working successfully!")
-    print("✓ data source integration complete!")
-    print("✓ Multiple data sources integrated!")
-    print(f"✓ Total data processed: {total_obs:,} observations")
-    print(f"✓ Countries covered: {len(all_countries)}")
+    print("[OK] Enhanced platform working successfully!")
+    print("[OK] data source integration complete!")
+    print("[OK] Multiple data sources integrated!")
+    print(f"[OK] Total data processed: {total_obs:,} observations")
+    print(f"[OK] Countries covered: {len(all_countries)}")
 
     return {
         'success': True,

@@ -142,7 +142,7 @@ class OECDDataCollector:
                     # Parse SDMX XML response
                     # (Simplified - would need proper SDMX parser for production)
                     # For now, return placeholder
-                    print(f"  ✅ {indicator_name}: API accessible")
+                    print(f"  [OK] {indicator_name}: API accessible")
 
                     # Record collection attempt
                     self.tracker.record_collection(
@@ -157,7 +157,7 @@ class OECDDataCollector:
                     )
 
                 else:
-                    print(f"  ❌ {indicator_name}: HTTP {response.status_code}")
+                    print(f"  [X] {indicator_name}: HTTP {response.status_code}")
 
                     self.tracker.record_collection(
                         source='OECD',
@@ -175,7 +175,7 @@ class OECDDataCollector:
                 time.sleep(0.1)
 
             except requests.exceptions.RequestException as e:
-                print(f"  ❌ {indicator_name}: {str(e)}")
+                print(f"  [X] {indicator_name}: {str(e)}")
 
                 self.tracker.record_collection(
                     source='OECD',
@@ -200,14 +200,14 @@ class OECDDataCollector:
         try:
             response = self.session.get(test_url, timeout=10)
             if response.status_code == 200:
-                print("  ✅ OECD API accessible")
+                print("  [OK] OECD API accessible")
                 print(f"  Response length: {len(response.text)} bytes")
                 return True
             else:
-                print(f"  ❌ HTTP {response.status_code}")
+                print(f"  [X] HTTP {response.status_code}")
                 return False
         except requests.exceptions.RequestException as e:
-            print(f"  ❌ Error: {str(e)}")
+            print(f"  [X] Error: {str(e)}")
             return False
 
     def create_collection_plan(self):
@@ -248,7 +248,7 @@ class OECDDataCollector:
         # Save plan
         plan_file = OECD_PATH / "collection_plan.csv"
         plan_df.to_csv(plan_file, index=False)
-        print(f"\n  📁 Plan saved: {plan_file.name}")
+        print(f"\n  Plan saved: {plan_file.name}")
 
         return plan_df
 
@@ -271,7 +271,7 @@ def main():
         print("  pip install pandasdmx")
         print("  Then re-run collector with SDMX support")
     else:
-        print("\n❌ OECD API not accessible. Check connection.")
+        print("\n[X] OECD API not accessible. Check connection.")
 
 
 if __name__ == "__main__":

@@ -143,7 +143,7 @@ class CapitalFlowsCollector:
 
         self._log_collection_summary()
 
-        logger.info(f"✓ data source capital flows data collection completed")
+        logger.info(f"[OK] data source capital flows data collection completed")
         return harmonized_data
 
     def _collect_existing_source_data(self) -> Dict[str, pd.DataFrame]:
@@ -302,10 +302,10 @@ class CapitalFlowsCollector:
 
                 if data is not None:
                     working_data[f'{series_id.lower()}_monthly'] = data
-                    logger.info(f"✓ Loaded {description}: {len(data)} observations")
+                    logger.info(f"[OK] Loaded {description}: {len(data)} observations")
                     self.stats["series_collected"] += 1
                 else:
-                    logger.warning(f"✗ {description} not found in the data store working data")
+                    logger.warning(f"[X] {description} not found in the data store working data")
 
             except Exception as e:
                 logger.error(f"Error loading {series_id}: {e}")
@@ -355,11 +355,11 @@ class CapitalFlowsCollector:
                 data = self._collect_fred_series(series_info)
                 if data is not None and not data.empty:
                     fred_data[series_info['id'].lower()] = data
-                    logger.info(f"✓ Collected {series_info['name']}: {len(data)} observations")
+                    logger.info(f"[OK] Collected {series_info['name']}: {len(data)} observations")
                     self.stats["series_collected"] += 1
                     self.stats["observations_collected"] += len(data)
                 else:
-                    logger.warning(f"✗ {series_info['name']} not available")
+                    logger.warning(f"[X] {series_info['name']} not available")
 
             except Exception as e:
                 logger.error(f"Error collecting {series_info['id']}: {e}")
@@ -390,7 +390,7 @@ class CapitalFlowsCollector:
                 data = self._collect_fred_series(series_info)
                 if data is not None and not data.empty:
                     macro_data[series_info['id'].lower()] = data
-                    logger.info(f"✓ Collected {series_info['name']}: {len(data)} observations")
+                    logger.info(f"[OK] Collected {series_info['name']}: {len(data)} observations")
 
             except Exception as e:
                 logger.warning(f"Could not collect {series_info['id']}: {e}")

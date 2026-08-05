@@ -277,10 +277,10 @@ LATEX REPORTS ({len(latex_files)} total):
 
 DIRECTORY STRUCTURE:
   output/
-  ├── pdf_reports/          # Final PDF reports (after compilation)
-  ├── latex_sources/        # LaTeX source files
-  ├── visualizations/       # Generated charts
-  └── package_summary.txt   # This summary file
+  +-- pdf_reports/          # Final PDF reports (after compilation)
+  +-- latex_sources/        # LaTeX source files
+  +-- visualizations/       # Generated charts
+  `-- package_summary.txt   # This summary file
 
 STATUS: WORKING PACKAGE GENERATED
 ===============================

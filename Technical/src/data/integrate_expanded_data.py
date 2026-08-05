@@ -189,8 +189,8 @@ class DataIntegrator:
 ## Integration Summary
 
 **World Bank Data Expanded**:
-- Base indicators: 5 → **33 indicators** (+28)
-- Base observations: {stats.get('world_bank_base', 0):,} → **{stats.get('world_bank_total', 0):,} observations**
+- Base indicators: 5 -> **33 indicators** (+28)
+- Base observations: {stats.get('world_bank_base', 0):,} -> **{stats.get('world_bank_total', 0):,} observations**
 - New observations added: **{stats.get('world_bank_expanded', 0):,}**
 - Growth: **{((stats.get('world_bank_total', 0) / stats.get('world_bank_base', 1)) - 1) * 100:.1f}%**
 

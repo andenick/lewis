@@ -159,9 +159,9 @@ class EnhancedDataLoader:
                 df = self.load_fred_category(category, start_date, end_date)
                 all_data[category] = df
                 total_obs += len(df)
-                logger.info(f"✓ {category}: {len(df)} observations")
+                logger.info(f"[OK] {category}: {len(df)} observations")
             except Exception as e:
-                logger.error(f"✗ Failed to load {category}: {e}")
+                logger.error(f"[X] Failed to load {category}: {e}")
 
         logger.info(f"Loaded total: {total_obs:,} observations across {len(all_data)} categories")
         return all_data
@@ -211,10 +211,10 @@ class EnhancedDataLoader:
 
                 dfs.append(df)
                 total_obs += len(df)
-                logger.info(f"✓ ALFRED {category}: {len(df)} vintages")
+                logger.info(f"[OK] ALFRED {category}: {len(df)} vintages")
 
             except Exception as e:
-                logger.error(f"✗ Failed to load ALFRED {category}: {e}")
+                logger.error(f"[X] Failed to load ALFRED {category}: {e}")
 
         if dfs:
             combined_df = pd.concat(dfs, ignore_index=True)
@@ -465,15 +465,15 @@ class EnhancedDataLoader:
                     series_data = df[df['series_id'] == series_id].copy()
                     if not series_data.empty:
                         enhanced_data[name] = series_data
-                        logger.info(f"✓ {name}: {len(series_data)} observations")
+                        logger.info(f"[OK] {name}: {len(series_data)} observations")
                     else:
-                        logger.warning(f"✗ No data found for {series_id}")
+                        logger.warning(f"[X] No data found for {series_id}")
                 else:
                     enhanced_data[name] = df
-                    logger.info(f"✓ {name}: {len(df)} observations")
+                    logger.info(f"[OK] {name}: {len(df)} observations")
 
             except Exception as e:
-                logger.error(f"✗ Failed to load {name}: {e}")
+                logger.error(f"[X] Failed to load {name}: {e}")
 
         return enhanced_data
 

@@ -243,10 +243,10 @@ LATEX REPORTS ({len(latex_files)} total):
 
 DIRECTORY STRUCTURE:
   output/
-  ├── pdf_reports/          # Final PDF reports (after compilation)
-  ├── latex_sources/        # LaTeX source files
-  ├── visualizations/       # Generated charts
-  └── package_summary.txt   # This summary file
+  +-- pdf_reports/          # Final PDF reports (after compilation)
+  +-- latex_sources/        # LaTeX source files
+  +-- visualizations/       # Generated charts
+  `-- package_summary.txt   # This summary file
 
 NEXT STEPS:
 1. Review LaTeX source files in latex_sources/

@@ -7,7 +7,7 @@ Collect bilateral FDI position data from IMF.
 The CDIS provides bilateral direct investment positions:
 - Inward FDI positions by investor country
 - Outward FDI positions by destination country
-- Represents holdings with ≥10% voting power
+- Represents holdings with >=10% voting power
 
 Coverage: 100+ reporting countries, annual
 Period: 2009-present
