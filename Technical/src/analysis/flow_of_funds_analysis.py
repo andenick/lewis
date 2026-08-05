@@ -2,7 +2,7 @@
 Flow of Funds Analysis
 ======================
 
-Replicates the APE ClassFiles R analysis in Python.
+Re-implements, in Python, an analysis originally written as a coursework R notebook.
 Analyzes US international investment position and cross-border capital flows.
 
 Key Features:
@@ -13,7 +13,8 @@ Key Features:
 - Primary vs secondary income balance trends
 - Implied profit rates calculations
 
-Based on: Classfiles/APE/final_APE/APE_Final3_NA.Rmd
+Derived from a coursework R notebook that is not redistributed here; the analysis it
+performs is fully specified by this module and the sources listed in data/MANIFEST.md.
 
 Author: Claude
 Date: 2025-10-06

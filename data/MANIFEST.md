@@ -18,7 +18,7 @@ repository — fetch it from the public sources below and place it under
 | **IMF** | BOP, CDIS, CPIS, COFER | <https://data.imf.org/> · SDMX API | — |
 | **OECD** | BoP and macro indicators | <https://data.oecd.org/> · SDMX API | — |
 | **Eurostat** | EU balance of payments | <https://ec.europa.eu/eurostat> · SDMX API | — |
-| **BIS** | International banking statistics | <https://www.bis.org/statistics/> | — |
+| **BIS** | International banking statistics | <https://www.bis.org/statistics/index.htm> | — |
 | **ONS** (UK) | UK Balance of Payments (Pink Book) | <https://www.ons.gov.uk/> | — |
 | **Deutsche Bundesbank** | Germany Balance of Payments | <https://www.bundesbank.de/en/statistics> | — |
 

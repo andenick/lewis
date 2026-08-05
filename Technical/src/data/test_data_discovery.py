@@ -4,7 +4,20 @@ Test script to discover data source FRED files and validate paths.
 """
 
 import os
+import sys
 from pathlib import Path
+
+# Windows consoles default to cp1252, which cannot encode the check/cross glyphs this
+# script used to print -- it died with UnicodeEncodeError before reporting anything.
+# Ask for UTF-8 where the stream supports it, and fall back to ASCII markers where it
+# does not, so the script always runs to completion on a stock Windows Python.
+_UNICODE_OK = True
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except (AttributeError, ValueError, OSError):
+    _UNICODE_OK = (sys.stdout.encoding or "").lower().replace("-", "") in ("utf8", "utf8mb4")
+OK = "✓" if _UNICODE_OK else "[ok]"
+NO = "✗" if _UNICODE_OK else "[missing]"
 
 # Test data source path discovery
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
@@ -52,6 +65,6 @@ for name, path in other_paths.items():
     exists = path.exists()
     if exists:
         file_count = len(list(path.glob("**/*.csv")))
-        print(f"  ✓ {name}: {file_count} CSV files")
+        print(f"  {OK} {name}: {file_count} CSV files")
     else:
-        print(f"  ✗ {name}: Path not found")
+        print(f"  {NO} {name}: Path not found")

@@ -233,8 +233,9 @@ fof = FlowOfFundsAnalysis()
 fof.load_all_data()
 fof.plot_net_international_investment_position()
 fof.plot_iip_components()
-fof.plot_foreign_holdings()
-fof.plot_treasury_ownership()
+fof.plot_foreign_holdings_analysis()
+fof.plot_treasury_ownership_by_sector()
+fof.plot_primary_vs_secondary_income()
 ```
 
 ### Global Platform
@@ -449,7 +450,12 @@ provenance notes.
 - Type hints throughout
 - Comprehensive docstrings
 - Error handling for missing data
-- Windows encoding compatibility (cp1252 issues resolved)
+- Windows encoding: many scripts print Unicode status glyphs (`✓`, `✗`, `•`, box-drawing),
+  which a stock Windows console cannot encode under cp1252. Run them with UTF-8 stdout —
+  `set PYTHONUTF8=1` (or `PYTHONIOENCODING=utf-8`) — otherwise they raise
+  `UnicodeEncodeError` mid-run. `src/data/test_data_discovery.py` additionally
+  reconfigures its own stdout and degrades to ASCII markers, so it runs on stock
+  Windows defaults with no environment set.
 
 ### Visualization Quality ✅
 - Proper axis labels and titles
