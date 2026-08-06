@@ -476,10 +476,16 @@ class FranceDataCollector:
                     self.logger.info(f"Successfully collected {len(df)} BDF {indicator} observations")
 
         # Try DBnomics as alternative source for key indicators
+        # Codes verified against the live DBnomics v22 API on 2026-08-05 (all three
+        # previous entries returned 404 and had never fetched anything; the old GDP
+        # dataset code even contained a stray CJK fragment). The former ECB
+        # inflation-expectations entry had no verifiable replacement and was removed
+        # rather than left as a code that cannot resolve.
         dbnomics_indicators = [
-            ('INSEE', 'CPI-2015', 'IPC-2015-FR'),  # CPI
-            ('INSEE', 'GDP-M季度', 'PIB-T-2014-FR'),  # GDP
-            ('ECB', 'EST_B', 'FR-CPM-ANN-CPT-STA'),  # Inflation expectations
+            # Monthly CPI, base 2015, all households, France, all items (432 obs at verification)
+            ('INSEE', 'IPC-2015', 'M.IPC.SO.00.SO.INDICE.ENSEMBLE.FE.SO.BRUT.2015.FALSE'),
+            # Quarterly GDP, chained volumes, SA-WDA (301 obs at verification)
+            ('INSEE', 'CNT-2014-PIB-EQB-RF', 'T.CNT-EQUILIBRE_PIB.SO.PIB.SO.VALEUR_ABSOLUE.FE.L.EUROS.CVS-CJO.TRUE'),
         ]
 
         for provider, dataset, series in dbnomics_indicators:
